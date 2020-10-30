@@ -1,25 +1,33 @@
 library(myglmnet)
 library(glmnet)
 library(microbenchmark)
-n = 3000
-p = 5000
+n = 30
+p = 5
 set.seed(1)
 
 X = matrix(rnorm(n*p),n,p)
-beta = rnorm(p) * rbinom(p, 1, 0.6)
+beta = rnorm(p) * rbinom(p, 1, 0.3)
 
 y = X %*% beta
 sdy = sd(y)
 y = y /sdy
 w = rep(1/n, n)
+y2 = rep(1.0, n)
+y2[y < median(y)] = 0.0
 
-ref = glmnet(X, y, family='gaussian', intercept = F, standardize = F, weights = w)
+ref = glmnet(X, y2, family='binomial', intercept = F, standardize = F)
 lambdar = ref$lambda
-# ref = glmnet(X, y, family='gaussian', lambda=lambdar, intercept = F, standardize = F)
-# tset = wrapper(X, y,lambda=lambdar)
 
-microbenchmark(glmnet(X, y, family='gaussian', lambda=lambdar, intercept = F, standardize = F,weights = w),
-               wrapper(X, y,lambda=lambdar), times=1L)
+wrapper(X, y2, lambdar)
+
+#
+# ref = glmnet(X, y, family='gaussian', intercept = F, standardize = F, weights = w)
+# lambdar = ref$lambda
+# # ref = glmnet(X, y, family='gaussian', lambda=lambdar, intercept = F, standardize = F)
+# # tset = wrapper(X, y,lambda=lambdar)
+#
+# microbenchmark(glmnet(X, y, family='gaussian', lambda=lambdar, intercept = F, standardize = F,weights = w),
+#                wrapper(X, y,lambda=lambdar), times=1L)
 
 
 

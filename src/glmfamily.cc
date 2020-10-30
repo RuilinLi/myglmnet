@@ -94,7 +94,7 @@ double Logistic::get_deviance(const double *y, const double *eta,
                               const double *v, int len) {
     double result = 0;
     for (int i = 0; i < len; ++i) {
-        result += log(1 + exp(eta[i])) - y[i] * eta[i];
+        result += v[i] * (log(1 + exp(eta[i])) - y[i] * eta[i]);
     }
     result *= 2;
     return result;

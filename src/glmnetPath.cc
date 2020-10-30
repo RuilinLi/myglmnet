@@ -87,7 +87,7 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
             double rel_diff =
                 (prev_dev - current_dev) / fmax(fabs(prev_dev), 1.0);
             prev_dev = current_dev;
-            if (fabs(rel_diff) < thr) {
+            if (fabs(rel_diff) < 1e-5) {
                 break;
             }
 

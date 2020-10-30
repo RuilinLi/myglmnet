@@ -30,7 +30,7 @@ SEXP test(SEXP x2, SEXP y2, SEXP lambda2, SEXP v2, SEXP intr2, SEXP ju2,
     double alpha = 1.0;
     // Rprintf("cl lower is %f \n", cl[]);
     // Rprintf("cl upper is %f\n")
-    glmnetPath(alpha, &X, y, v, intr, ju, vp, cl, ni, 1e-7, 10000, "gaussian", false,
+    glmnetPath(alpha, &X, y, v, intr, ju, vp, cl, ni, 1e-7, 10000, "logistic", false,
                nullptr, lambda, nlambda);
     return R_NilValue;
 }
