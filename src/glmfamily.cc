@@ -1,12 +1,14 @@
 #include "glmfamily.h"
-
+#include "R.h"
 #include <math.h>
 
+GlmFamily::~GlmFamily() {}
 Gaussian::Gaussian() {}
 
 // Copy these vectors, though maybe only need to do it once?
 void Gaussian::get_workingset(const double *eta, const double *y,
                               const double *v, double *w, double *z, int len) {
+    Rprintf("right working set\n");
     for (int i = 0; i < len; ++i) {
         w[i] = v[i];
         z[i] = v[i] * (y[i] - eta[i]);
@@ -22,8 +24,8 @@ double Gaussian::get_deviance(const double *y, const double *eta,
     return result;
 }
 
-double Gaussian::get_residual(const double *y, const double *eta,
-                              const double *v, double *r, int len) {
+void Gaussian::get_residual(const double *y, const double *eta, const double *v,
+                            double *r, int len) {
     for (int i = 0; i < len; ++i) {
         r[i] = v[i] * (y[i] - eta[i]);
     }
@@ -32,6 +34,7 @@ double Gaussian::get_residual(const double *y, const double *eta,
 double Gaussian::null_deviance(const double *y, const double *v, int intr,
                                double *eta, bool has_offset,
                                const double *offset, double *aint, int len) {
+    Rprintf("right null dev\n");
     if (!has_offset) {
         double weightysquare = 0;
         double weighty = 0;
@@ -85,7 +88,7 @@ void Logistic::get_workingset(const double *eta, const double *y,
     for (int i = 0; i < len; ++i) {
         double p = 1 / (1 + exp(-eta[i]));
         w[i] = p * (1 - p) * v[i];
-        z[i] =  (y[i] - p)* v[i];
+        z[i] = (y[i] - p) * v[i];
     }
 }
 
@@ -99,8 +102,8 @@ double Logistic::get_deviance(const double *y, const double *eta,
     return result;
 }
 
-double Logistic::get_residual(const double *y, const double *eta,
-                              const double *v, double *r, int len) {
+void Logistic::get_residual(const double *y, const double *eta, const double *v,
+                            double *r, int len) {
     for (int i = 0; i < len; ++i) {
         double eeta = exp(eta[i]);
         r[i] = y[i] - eeta / (1 + eeta);

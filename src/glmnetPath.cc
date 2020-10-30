@@ -1,7 +1,10 @@
+#include <math.h>
 #include <string.h>
 
+#include "R.h"
 #include "glmfamily.h"
 #include "glmnetMatrix.h"
+
 void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
               MatrixGlmnet *X, double *r, const double *v, int intr,
               const int *ju, const double *vp, const double *cl, int nx,
@@ -11,10 +14,11 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
               double *__restrict xv, int *jerr);
 
 GlmFamily *get_family(const char *family) {
-    if (strcmp(family, "gaussian")) {
+    if (strcmp(family, "gaussian") == 0) {
+        Rprintf("this one!\n");
         return new Gaussian();
     }
-    if (strcmp(family, "logistic")) {
+    if (strcmp(family, "logistic") == 0) {
         return new Logistic();
     }
 
@@ -46,6 +50,7 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     for (int i = 0; i < ni; ++i) {
         iy[i] = 0;
         mm[i] = 0;
+        a[i] = 0.0;
     }
 
     int iz = 0;
@@ -57,11 +62,26 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     double nulldev =
         fam->null_deviance(y, v, intr, eta, has_offset, offset, &aint, no);
 
-    int mxitnr = (strcmp(family, "gaussian")) ? 1 : 25;
+    int mxitnr = (strcmp(family, "gaussian") == 0) ? 1 : 25;
+    Rprintf("maxiter is %d \n", mxitnr);
     double alm0 = 0;
+    double prev_dev = nulldev;
+    double current_dev;
     for (int m = 0; m < nlambda; ++m) {
         double almc = lambdas[m];
-        bool IRLS_conv = false;
+        // Rprintf("Currently lambda is %f\n", almc);
+        // Rprintf("Currently nlp is %d\n", nlp);
+        // Rprintf("Currently dev is %f\n", prev_dev);
+        // Rprintf("Currently a3 is %f\n", a[2]);
+        // Rprintf("Currently nino is %d\n", nino);
+        // for (int l = 0; l < no; ++l) {
+        //     Rprintf("eta[%d] is %f\n", l + 1, eta[l]);
+        // }
+
+        // for (int l = 0; l < ni; ++l) {
+        //     Rprintf("beta[%d] is %f\n", l + 1, a[l]);
+        // }
+
         // IRLS, z here is actually the weighted working response
         for (int j = 0; j < mxitnr; ++j) {
             fam->get_workingset(eta, y, v, w, z, no);
@@ -69,12 +89,31 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
                      nx, thr, maxit, a, &aint, g, ia, iy, &iz, mm, &nino, &rsqc,
                      &nlp, xv, &jerr);
 
+            X->compute_eta(eta, a, aint, has_offset, offset);
+            current_dev = fam->get_deviance(y, eta, v, no);
+
+            double rel_diff =
+                (prev_dev - current_dev) / fmax(fabs(prev_dev), 1.0);
+            prev_dev = current_dev;
+            if (fabs(rel_diff) < thr) {
+                break;
+            }
             // TODO update eta = X * a + aint + offset
             // Use relative change in deviance to determine IRLS convergence
             // Use devratio to determine early-stop in lambda iteration
         }
+        double devratio = 1 - current_dev / nulldev;
+        if (devratio > 0.999) {
+            break;
+        }
         alm0 = almc;
+        // for (int l = 0; l < ni; ++l) {
+        //     Rprintf("beta[%d] is %f\n", l + 1, a[l]);
+        // }
+        // Rprintf("Currently nlp is %d\n", nlp);
+
     }
+    delete fam;  // Mixed C and C++ style heap allocation...
     free(r);
     free(a);
     free(g);
@@ -85,4 +124,6 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     free(ia);
     free(iy);
     free(mm);
+
+    return;
 }
