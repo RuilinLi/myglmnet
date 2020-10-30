@@ -10,5 +10,5 @@ wrapper = function(x, y, lambda){
   upper.limits = rep(100.0, ni)
   cl = rbind(lower.limits, upper.limits)
   ju = rep(1L, ni)
-  .Call("test", x, y, lambda, weight, 1L, ju, vp, cl, PACKAGE = "myglmnet")
+  .Call("test", x, y, lambda, weight, 0L, ju, vp, cl, PACKAGE = "myglmnet")
 }

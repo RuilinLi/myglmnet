@@ -3,13 +3,13 @@
 
 #include "glmnetMatrix.h"
 void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
-              MatrixGlmnet *X, double *r, const double *v, int intr,
+              MatrixGlmnet *X, double *__restrict r, const double *v, int intr,
               const int *ju, const double *vp, const double *cl, int nx,
               double thr, int maxit, double *__restrict a, double *aint,
               double *__restrict g, int *__restrict ia, int *__restrict iy,
-              int *iz, int *__restrict mm, int *nino, double *rsqc, int *nlp, double *__restrict xv,
-              int *jerr) {
-    //double *__restrict xv = (double *)malloc(sizeof(double) * ni);
+              int *iz, int *__restrict mm, int *nino, double *rsqc, int *nlp,
+              double *__restrict xv, int *jerr) {
+    // double *__restrict xv = (double *)malloc(sizeof(double) * ni);
     double xmz = MatrixGlmnet::sumv(v, no);
     double ab = almc * alpha;
     double dem = almc * (1.0 - alpha);
@@ -165,6 +165,6 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
         }
         jz = false;
     }
-    //free(xv);
+    // free(xv);
     return;
 }

@@ -19,7 +19,6 @@ SEXP test(SEXP x2, SEXP y2, SEXP lambda2, SEXP v2, SEXP intr2, SEXP ju2,
     int no = nrows(x2);
     int ni = ncols(x2);
     DenseM X(no, ni, REAL(x2));
-    Rprintf("no and ni are %d and %d \n", no, ni);
     double *y = REAL(y2);
     double *lambda = REAL(lambda2);
     double *v = REAL(v2);
@@ -29,7 +28,9 @@ SEXP test(SEXP x2, SEXP y2, SEXP lambda2, SEXP v2, SEXP intr2, SEXP ju2,
     double *cl = REAL(cl2);
     int nlambda = length(lambda2);
     double alpha = 1.0;
-    glmnetPath(alpha, &X, y, v, intr, ju, vp, cl, 1000, 1e-7, 10000, "gaussian", false,
+    // Rprintf("cl lower is %f \n", cl[]);
+    // Rprintf("cl upper is %f\n")
+    glmnetPath(alpha, &X, y, v, intr, ju, vp, cl, ni, 1e-7, 10000, "gaussian", false,
                nullptr, lambda, nlambda);
     return R_NilValue;
 }

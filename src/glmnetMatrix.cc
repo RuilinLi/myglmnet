@@ -1,10 +1,9 @@
 #include "glmnetMatrix.h"
-#include "R.h"
+
 #include <math.h>
 
 #include <cstdlib>
-#include <iostream>
-#include <numeric>
+
 
 MatrixGlmnet::~MatrixGlmnet() {}
 
@@ -27,7 +26,14 @@ DenseM::DenseM(int no, int ni, const double *x) {
 DenseM::~DenseM() { data = nullptr; }
 
 double DenseM::dot_product(int j, const double *v) {
-    return std::inner_product(data + j * no, data + (j + 1) * no, v, 0.0);
+    // return std::inner_product(data + j * no, data + (j + 1) * no, v, 0.0);
+
+    double result = 0.0;
+// If there's no auto vectorization then we can do #pragma clang loop vectorize(enable) interleave(enable)
+    for (int i = 0; i < no; ++i) {
+        result += data[j * no + i] * v[i];
+    }
+    return result;
 }
 
 double DenseM::vx2(int j, const double *v) {
@@ -45,9 +51,8 @@ void DenseM::update_res(int j, double d, const double *v,
     }
 }
 
-void DenseM::compute_eta(double *eta, const double *a, double aint,
+void DenseM::compute_eta(double *__restrict eta, const double *a, double aint,
                          bool has_offset, const double *offset) {
-    Rprintf("Aint is %f\n", aint);
     for (int i = 0; i < no; ++i) {
         eta[i] = aint;
     }
@@ -58,7 +63,6 @@ void DenseM::compute_eta(double *eta, const double *a, double aint,
         }
     }
     if (has_offset) {
-        Rprintf("should not reach here!\n");
         for (int i = 0; i < no; ++i) {
             eta[i] += offset[i];
         }

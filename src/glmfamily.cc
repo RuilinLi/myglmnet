@@ -8,7 +8,6 @@ Gaussian::Gaussian() {}
 // Copy these vectors, though maybe only need to do it once?
 void Gaussian::get_workingset(const double *eta, const double *y,
                               const double *v, double *w, double *z, int len) {
-    Rprintf("right working set\n");
     for (int i = 0; i < len; ++i) {
         w[i] = v[i];
         z[i] = v[i] * (y[i] - eta[i]);
@@ -34,7 +33,6 @@ void Gaussian::get_residual(const double *y, const double *eta, const double *v,
 double Gaussian::null_deviance(const double *y, const double *v, int intr,
                                double *eta, bool has_offset,
                                const double *offset, double *aint, int len) {
-    Rprintf("right null dev\n");
     if (!has_offset) {
         double weightysquare = 0;
         double weighty = 0;

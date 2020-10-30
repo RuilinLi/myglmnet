@@ -1,6 +1,6 @@
 #include <math.h>
 #include <string.h>
-
+#include <assert.h>
 #include "R.h"
 #include "glmfamily.h"
 #include "glmnetMatrix.h"
@@ -68,26 +68,18 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     double prev_dev = nulldev;
     double current_dev;
     for (int m = 0; m < nlambda; ++m) {
-        double almc = lambdas[m];
-        // Rprintf("Currently lambda is %f\n", almc);
-        // Rprintf("Currently nlp is %d\n", nlp);
-        // Rprintf("Currently dev is %f\n", prev_dev);
-        // Rprintf("Currently a3 is %f\n", a[2]);
-        // Rprintf("Currently nino is %d\n", nino);
-        // for (int l = 0; l < no; ++l) {
-        //     Rprintf("eta[%d] is %f\n", l + 1, eta[l]);
-        // }
 
-        // for (int l = 0; l < ni; ++l) {
-        //     Rprintf("beta[%d] is %f\n", l + 1, a[l]);
-        // }
+        double almc = lambdas[m];
 
         // IRLS, z here is actually the weighted working response
         for (int j = 0; j < mxitnr; ++j) {
             fam->get_workingset(eta, y, v, w, z, no);
+
             wls_base(alm0, almc, alpha, m, no, ni, X, z, w, intr, ju, vp, cl,
                      nx, thr, maxit, a, &aint, g, ia, iy, &iz, mm, &nino, &rsqc,
                      &nlp, xv, &jerr);
+            
+            assert(jerr == 0);
 
             X->compute_eta(eta, a, aint, has_offset, offset);
             current_dev = fam->get_deviance(y, eta, v, no);
@@ -98,21 +90,42 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
             if (fabs(rel_diff) < thr) {
                 break;
             }
-            // TODO update eta = X * a + aint + offset
-            // Use relative change in deviance to determine IRLS convergence
-            // Use devratio to determine early-stop in lambda iteration
+
         }
         double devratio = 1 - current_dev / nulldev;
-        if (devratio > 0.999) {
+        Rprintf("devratio is %f\n", devratio);
+        if ((devratio > 0.999) || (nino > nx)) {
             break;
         }
+        Rprintf("number of pass is %d\n", nlp);
+        Rprintf("nino is %d\n", nino);
+
         alm0 = almc;
         // for (int l = 0; l < ni; ++l) {
         //     Rprintf("beta[%d] is %f\n", l + 1, a[l]);
         // }
         // Rprintf("Currently nlp is %d\n", nlp);
-
+        // Rprintf("no is  %d\n", no);
+        // Rprintf("ni is  %d\n", ni);
+        // Rprintf("ia is  %d\n", ia[0]);
+        // Rprintf("iy is  %d\n", iy[ni - 1]);
+        // Rprintf("mm is  %d\n", mm[ni - 1]);
+        // Rprintf("nino is  %d\n", nino);
+        // Rprintf("iz is  %d\n", iz);
+        // Rprintf("nlp is  %d\n", nlp);
+        // Rprintf("jerr is  %d\n", jerr);
     }
+
+    // Rprintf("no is  %d\n", no);
+    // Rprintf("ni is  %d\n", ni);
+    // Rprintf("ia is  %d\n", ia[0]);
+    // Rprintf("iy is  %d\n", iy[ni-1]);
+    // Rprintf("mm is  %d\n", mm[ni-1]);
+    // Rprintf("nino is  %d\n", nino);
+    // Rprintf("iz is  %d\n", iz);
+    // Rprintf("nlp is  %d\n", nlp);
+    // Rprintf("jerr is  %d\n", jerr);
+
     delete fam;  // Mixed C and C++ style heap allocation...
     free(r);
     free(a);
