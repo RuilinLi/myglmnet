@@ -13,24 +13,12 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
               int *iz, int *__restrict mm, int *nino, double *rsqc, int *nlp,
               double *__restrict xv, int *jerr);
 
-GlmFamily *get_family(const char *family) {
-    if (strcmp(family, "gaussian") == 0) {
-        Rprintf("this one!\n");
-        return new Gaussian();
-    }
-    if (strcmp(family, "logistic") == 0) {
-        return new Logistic();
-    }
-
-    return nullptr;
-}
 
 void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
                 int intr, const int *ju, const double *vp, const double *cl,
-                int nx, double thr, int maxit, const char *family,
-                bool has_offset, double *offset, const double *lambdas,
-                int nlambda) {
-    GlmFamily *fam = get_family(family);
+                int nx, double thr, int maxit, GlmFamily *fam,
+                bool has_offset, double *offset, const double *ulambdas,
+                int nlambda, int mxitnr, const double flmin) {
     int no = X->get_no();
     int ni = X->get_ni();
     double aint = 0;  // intercept
@@ -60,10 +48,27 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     double rsqc = 0;
 
     double nulldev =
-        fam->null_deviance(y, v, intr, eta, has_offset, offset, &aint, no);
+        fam->null_deviance(y, v, r, intr, eta, has_offset, offset, &aint, no);
 
-    int mxitnr = (strcmp(family, "gaussian") == 0) ? 1 : 25;
     Rprintf("maxiter is %d \n", mxitnr);
+
+    // Compute max_lambda here instead of using user defined lambdas
+    double *lambdas = (double*)malloc(sizeof(double) * nlambda);
+    if(flmin < 1.0) {
+        double max_lambda = X->max_grad(r, ju, vp);
+        lambdas = (double*)malloc(sizeof(double) * nlambda);
+        lambdas[0] = max_lambda;
+        double ratio = pow(flmin, 1.0/(nlambda - 1));
+        for(int i = 1; i < nlambda; ++i) {
+            lambdas[i] = lambdas[i-1] * ratio;
+            Rprintf("lambda[%d] is %f\n", i+1, lambdas[i]);
+        }
+    } else {
+        for(int i = 0; i < nlambda; ++i) {
+            lambdas[i] = ulambdas[i];
+        }
+    }
+
     double alm0 = 0;
     double prev_dev = nulldev;
     double current_dev;
@@ -126,7 +131,6 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     // Rprintf("nlp is  %d\n", nlp);
     // Rprintf("jerr is  %d\n", jerr);
 
-    delete fam;  // Mixed C and C++ style heap allocation...
     free(r);
     free(a);
     free(g);
@@ -137,6 +141,7 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     free(ia);
     free(iy);
     free(mm);
+    free(lambdas);
 
     return;
 }

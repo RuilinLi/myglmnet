@@ -8,10 +8,10 @@
 */
 
 /* .Call calls */
-extern SEXP test(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP solve(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
-    {"test", (DL_FUNC) &test, 8},
+    {"solve", (DL_FUNC) &solve, 26},
     {NULL, NULL, 0}
 };
 

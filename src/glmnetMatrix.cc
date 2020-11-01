@@ -10,6 +10,18 @@ MatrixGlmnet::~MatrixGlmnet() {}
 int MatrixGlmnet::get_ni() { return this->ni; }
 int MatrixGlmnet::get_no() { return this->no; }
 
+double MatrixGlmnet::max_grad(const double* r, const int* ju, const double* vp)
+{
+    double result = 0.0;
+    for(int i = 0; i < ni; ++i){
+        if((!ju[i]) || (vp[i] <= 0.0)){
+            continue;
+        }
+        result =fmax(result, fabs(this->dot_product(i, r)));
+    }
+    return result;
+}
+
 double MatrixGlmnet::sumv(const double *v, int len) {
     double result = 0.0;
     for (int i = 0; i < len; ++i) {

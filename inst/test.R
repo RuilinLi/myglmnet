@@ -11,6 +11,12 @@ beta = rnorm(p) * rbinom(p, 1, 0.3)
 y = X %*% beta
 sdy = sd(y)
 y = y /sdy
+
+ref = glmnet(X, y, family='gaussian', exclude=c(2L), standardize = F)
+
+myglmnet(X, y, family='gaussian', exclude=c(2L))
+
+
 w = rep(1/n, n)
 y2 = rep(1.0, n)
 y2[y < median(y)] = 0.0

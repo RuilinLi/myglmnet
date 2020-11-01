@@ -1,6 +1,8 @@
 #include "glmfamily.h"
-#include "R.h"
+
 #include <math.h>
+
+#include "R.h"
 
 GlmFamily::~GlmFamily() {}
 Gaussian::Gaussian() {}
@@ -30,8 +32,8 @@ void Gaussian::get_residual(const double *y, const double *eta, const double *v,
     }
 }
 
-double Gaussian::null_deviance(const double *y, const double *v, int intr,
-                               double *eta, bool has_offset,
+double Gaussian::null_deviance(const double *y, const double *v, double *r,
+                               int intr, double *eta, bool has_offset,
                                const double *offset, double *aint, int len) {
     if (!has_offset) {
         double weightysquare = 0;
@@ -45,6 +47,7 @@ double Gaussian::null_deviance(const double *y, const double *v, int intr,
         if (!intr) {
             for (int i = 0; i < len; ++i) {
                 eta[i] = 0;
+                r[i] = v[i] * y[i];
             }
             return weightysquare;
         }
@@ -52,6 +55,7 @@ double Gaussian::null_deviance(const double *y, const double *v, int intr,
         double beta0 = weighty / weightsum;
         for (int i = 0; i < len; ++i) {
             eta[i] = beta0;
+            r[i] = v[i] * (y[i] - beta0);
         }
         *aint = beta0;
         return (weightysquare - 2 * weighty * beta0 +
@@ -70,12 +74,14 @@ double Gaussian::null_deviance(const double *y, const double *v, int intr,
     if (!intr) {
         for (int i = 0; i < len; ++i) {
             eta[i] = offset[i];
+            r[i] = v[i] * (y[i] - offset[i]);
         }
         return weightysquare;
     }
     double beta0 = weighty / weightsum;
     for (int i = 0; i < len; ++i) {
         eta[i] = offset[i] + beta0;
+        r[i] = v[i] * (y[i] - beta0 - offset[i]);
     }
     return (weightysquare - 2 * weighty * beta0 + weightsum * beta0 * beta0);
 }
@@ -108,8 +114,8 @@ void Logistic::get_residual(const double *y, const double *eta, const double *v,
     }
 }
 
-double Logistic::null_deviance(const double *y, const double *v, int intr,
-                               double *eta, bool has_offset,
+double Logistic::null_deviance(const double *y, const double *v, double *r,
+                               int intr, double *eta, bool has_offset,
                                const double *offset, double *aint, int len) {
     if (!has_offset) {
         double count0 = 0;
@@ -121,13 +127,17 @@ double Logistic::null_deviance(const double *y, const double *v, int intr,
         if (!intr) {
             for (int i = 0; i < len; ++i) {
                 eta[i] = 0;
+                r[i] = v[i] * (y[i] - 0.5);
             }
             return (2 * log(2) * (count0 + count1));
         }
         double p0inv = 1 + (count1 / count0);
-        *aint = -log(p0inv - 1);
+        double p0 = 1/p0inv;
+        double aint_val = -log(p0inv - 1);
+        *aint = aint_val;
         for (int i = 0; i < len; ++i) {
-            eta[i] = *aint;
+            eta[i] = aint_val;
+            r[i] = v[i] * (y[i] - p0);
         }
         return (2 * log(p0inv) * (count0 + count1));
     }
@@ -144,3 +154,6 @@ double Logistic::null_deviance(const double *y, const double *v, int intr,
     //     return (2*(count0 + count1));
     // }
 }
+
+const char *Gaussian::get_name() { return "gaussian"; }
+const char *Logistic::get_name() { return "logistic"; }

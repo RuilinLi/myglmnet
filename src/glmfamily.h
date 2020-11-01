@@ -15,12 +15,15 @@ class GlmFamily {
     virtual void get_residual(const double *y, const double *eta,
                               const double *v, double *r, int len) = 0;
 
-    virtual double null_deviance(const double *y, const double *v, int intr,
-                                 double *eta, bool has_offset,
+    // This function does three things:
+    // 1. Compute the null deviance
+    // 2. Get parameter estimate for the intercept, if needed
+    // 3. Compute weighted residual of a model with intercept only
+    virtual double null_deviance(const double *y, const double *v, double *r,
+                                 int intr, double *eta, bool has_offset,
                                  const double *offset, double *aint,
                                  int len) = 0;
     virtual ~GlmFamily();
-
 };
 
 class Gaussian : public GlmFamily {
@@ -37,9 +40,10 @@ class Gaussian : public GlmFamily {
     void get_residual(const double *y, const double *eta, const double *v,
                       double *r, int len);
 
-    double null_deviance(const double *y, const double *v, int intr,
+    double null_deviance(const double *y, const double *v, double *r, int intr,
                          double *eta, bool has_offset, const double *offset,
                          double *aint, int len);
+    static const char *get_name();
 };
 
 class Logistic : public GlmFamily {
@@ -54,9 +58,10 @@ class Logistic : public GlmFamily {
     void get_residual(const double *y, const double *eta, const double *v,
                       double *r, int len);
 
-    double null_deviance(const double *y, const double *v, int intr,
+    double null_deviance(const double *y, const double *v, double *r, int intr,
                          double *eta, bool has_offset, const double *offset,
                          double *aint, int len);
+    static const char *get_name();
 };
 
 #endif

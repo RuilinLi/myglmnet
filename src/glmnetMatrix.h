@@ -17,13 +17,16 @@ class MatrixGlmnet {
     virtual void update_res(int j, double d, const double* v, double* r) = 0;
 
     // Set eta = X * a + aint + offset, offset is optional
-    virtual void compute_eta(double *eta, const double *a, double aint, bool has_offset, const double *offset) = 0;
+    virtual void compute_eta(double* eta, const double* a, double aint,
+                             bool has_offset, const double* offset) = 0;
 
     static double sumv(const double* v, int len);
     virtual ~MatrixGlmnet();
 
     int get_no();
     int get_ni();
+
+    double max_grad(const double* r, const int* ju, const double* vp);
 
    protected:
     int no;  // Number of rows
@@ -41,11 +44,11 @@ class DenseM : public MatrixGlmnet {
 
     void update_res(int j, double d, const double* v, double* r);
 
-    void compute_eta(double *eta, const double *a, double aint, bool has_offset, const double *offset);
+    void compute_eta(double* eta, const double* a, double aint, bool has_offset,
+                     const double* offset);
 
    private:
     const double* data;
 };
-
 
 #endif
