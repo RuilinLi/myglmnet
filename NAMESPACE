@@ -3,4 +3,5 @@
 export(glmnet.control)
 export(myglmnet)
 export(wrapper)
+importFrom(Matrix,drop0)
 useDynLib(myglmnet, .registration = TRUE)

@@ -1,3 +1,4 @@
+
 #' @useDynLib myglmnet, .registration = TRUE
 #' @export
 wrapper <- function(x, y, lambda) {
@@ -133,15 +134,16 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     }
     
     maxit <- as.integer(maxit)
-    lmu <- 0L
+    lmu <- integer(1)
     a0 <- double(nlam)
     ca <- double(nx * nlam)
-    # ia <- integer(nx) allocate ia in C code
+    ia <- integer(nx)
     nin <- integer(nlam)
     devratio <- double(nlam)
     alm <- double(nlam)
     nlp <- integer(1)
     jerr <- integer(1)
+    nulldev <- double(1)
     
     if (is.null(offset)) {
         offset <- double(0)
@@ -158,13 +160,21 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     mxitnr <- as.integer(mxitnr)
     
     .Call("solve", alpha, x, y, weights, ju, vp, cl, nx, nlam, flmin, ulam, thresh, 
-        isd, intr, maxit, lmu, a0, ca, nin, devratio, alm, nlp, family, offset, has_offset, 
-        mxitnr)
+        isd, intr, maxit, lmu, a0, ca, ia, nin, devratio, alm, nlp, family, offset, 
+        has_offset, mxitnr, nulldev, jerr)
     
     # if (trace.it) { if (relax) cat('Training Fit\n') pb <- createPB(min = 0, max =
     # nlam, initial = 0, style = 3) }
+    fit <- list(jerr = jerr, a0 = a0, nin = nin, lmu = lmu, alm = alm, ca = ca, ia = ia)
+    outlist <- getcoef(fit, nvars, nx, vnames)
+    dev <- devratio[seq(lmu)]
+    outlist <- c(outlist, list(dev.ratio = dev, nulldev = nulldev, npasses = nlp, 
+        jerr = jerr, offset = has_offset))
     
-    
+    outlist$call <- this.call
+    outlist$nobs <- nobs
+    class(outlist) <- c(class(outlist), "glmnet")
+    outlist
     
     # No need for this either kopt <- switch(match.arg(type.logistic), Newton = 0,
     # modified.Newton = 1) if (family == 'multinomial') { type.multinomial <-
