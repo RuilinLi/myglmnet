@@ -2,7 +2,6 @@
 
 #include <math.h>
 
-#include "R.h"
 
 GlmFamily::~GlmFamily() {}
 Gaussian::Gaussian() {}
@@ -154,6 +153,3 @@ double Logistic::null_deviance(const double *y, const double *v, double *r,
     //     return (2*(count0 + count1));
     // }
 }
-
-const char *Gaussian::get_name() { return "gaussian"; }
-const char *Logistic::get_name() { return "logistic"; }

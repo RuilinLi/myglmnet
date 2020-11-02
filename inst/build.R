@@ -5,15 +5,15 @@ install.packages('/Users/ruilinli/myglmnet', repo=NULL, type='source')
 
 
 library(myglmnet)
-n = 30
+n = 6
 p = 5
 set.seed(1)
 
 X = matrix(rnorm(n*p),n,p)
-beta = rnorm(p) * rbinom(p, 1, 0.3)
+beta = rnorm(p) * rbinom(p, 1, 0.99)
 
 y = X %*% beta
 sdy = sd(y)
 y = y /sdy
 
-myglmnet(X, y, family='gaussian', exclude=c(2L))
+result = myglmnet(X, y, family='gaussian', exclude=c(2L), intercept=TRUE, standardize=FALSE)

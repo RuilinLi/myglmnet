@@ -2,7 +2,6 @@
 #include <math.h>
 #include <string.h>
 
-#include "R.h"
 #include "glmfamily.h"
 #include "glmnetMatrix.h"
 
@@ -50,7 +49,6 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
         fam->null_deviance(y, v, r, intr, eta, has_offset, offset, &aint, no);
     *nulldev_ptr = nulldev;
 
-    Rprintf("maxiter is %d \n", mxitnr);
 
     // Compute max_lambda here instead of using user defined lambdas
     double *lambdas = (double *)malloc(sizeof(double) * nlambda);
@@ -96,7 +94,6 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
             }
         }
         double devratio = 1 - current_dev / nulldev;
-        Rprintf("devratio is %f\n", devratio);
 
         // Copy data to output
         for (int k = 0; k < nino; ++k) {
@@ -112,34 +109,17 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
         if ((devratio > 0.999) || (nino >= nx)) {
             break;
         }
-        Rprintf("number of pass is %d\n", *nlp);
-        Rprintf("nino is %d\n", nino);
+
+        if((m > 0) &&  ((devratio - devratio_vec[m-1]) < devratio*1e-5)){
+            break;
+        }
+
 
         alm0 = almc;
-        // for (int l = 0; l < ni; ++l) {
-        //     Rprintf("beta[%d] is %f\n", l + 1, a[l]);
-        // }
-        // Rprintf("Currently nlp is %d\n", nlp);
-        // Rprintf("no is  %d\n", no);
-        // Rprintf("ni is  %d\n", ni);
-        // Rprintf("ia is  %d\n", ia[0]);
-        // Rprintf("iy is  %d\n", iy[ni - 1]);
-        // Rprintf("mm is  %d\n", mm[ni - 1]);
-        // Rprintf("nino is  %d\n", nino);
-        // Rprintf("iz is  %d\n", iz);
-        // Rprintf("nlp is  %d\n", nlp);
-        // Rprintf("jerr is  %d\n", jerr);
+
     }
 
-    // Rprintf("no is  %d\n", no);
-    // Rprintf("ni is  %d\n", ni);
-    // Rprintf("ia is  %d\n", ia[0]);
-    // Rprintf("iy is  %d\n", iy[ni-1]);
-    // Rprintf("mm is  %d\n", mm[ni-1]);
-    // Rprintf("nino is  %d\n", nino);
-    // Rprintf("iz is  %d\n", iz);
-    // Rprintf("nlp is  %d\n", nlp);
-    // Rprintf("jerr is  %d\n", jerr);
+
 
     free(r);
     free(a);

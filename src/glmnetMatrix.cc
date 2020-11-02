@@ -4,20 +4,19 @@
 
 #include <cstdlib>
 
-
 MatrixGlmnet::~MatrixGlmnet() {}
 
 int MatrixGlmnet::get_ni() { return this->ni; }
 int MatrixGlmnet::get_no() { return this->no; }
 
-double MatrixGlmnet::max_grad(const double* r, const int* ju, const double* vp)
-{
+double MatrixGlmnet::max_grad(const double *r, const int *ju,
+                              const double *vp) {
     double result = 0.0;
-    for(int i = 0; i < ni; ++i){
-        if((!ju[i]) || (vp[i] <= 0.0)){
+    for (int i = 0; i < ni; ++i) {
+        if ((!ju[i]) || (vp[i] <= 0.0)) {
             continue;
         }
-        result =fmax(result, fabs(this->dot_product(i, r)));
+        result = fmax(result, fabs(this->dot_product(i, r))/vp[i]);
     }
     return result;
 }
@@ -41,7 +40,8 @@ double DenseM::dot_product(int j, const double *v) {
     // return std::inner_product(data + j * no, data + (j + 1) * no, v, 0.0);
 
     double result = 0.0;
-// If there's no auto vectorization then we can do #pragma clang loop vectorize(enable) interleave(enable)
+    // If there's no auto vectorization then we can do #pragma clang loop
+    // vectorize(enable) interleave(enable)
     for (int i = 0; i < no; ++i) {
         result += data[j * no + i] * v[i];
     }

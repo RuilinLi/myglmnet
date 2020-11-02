@@ -43,7 +43,6 @@ class Gaussian : public GlmFamily {
     double null_deviance(const double *y, const double *v, double *r, int intr,
                          double *eta, bool has_offset, const double *offset,
                          double *aint, int len);
-    static const char *get_name();
 };
 
 class Logistic : public GlmFamily {
@@ -61,7 +60,6 @@ class Logistic : public GlmFamily {
     double null_deviance(const double *y, const double *v, double *r, int intr,
                          double *eta, bool has_offset, const double *offset,
                          double *aint, int len);
-    static const char *get_name();
 };
 
 #endif

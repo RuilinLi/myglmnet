@@ -1,9 +1,9 @@
 library(myglmnet)
 library(glmnet)
 library(microbenchmark)
-n = 3000
-p = 5000
-# set.seed(1)
+n = 20
+p = 5
+ set.seed(1)
 
 X = matrix(rnorm(n*p),n,p)
 beta = rnorm(p) * rbinom(p, 1, 0.6)
@@ -14,17 +14,19 @@ y = y /sdy
 
 y2 = rep(1.0, n)
 y2[y<median(y)] = 0.0
+lam = c(0.3, 0.2, 0.15, 0.1, 0.05)
 
-ref = glmnet(X, y2, family='binomial', exclude=c(2L), standardize = F)
+ref = glmnet(X, y2, family='binomial', lambda = lam, standardize = F, intercept = T)
 
-test = myglmnet(X, y2, family='logistic', exclude=c(2L))
-ref$beta[,10]
-test$beta[,10]
+test = myglmnet(X, y2, family='logistic', lamnda = lam,standardize = F, intercept =T)
+
+max(ref$beta[,10] - test$beta[,10])
 
 
-ref = glmnet(X, y, family='gaussian', exclude=c(2L), standardize = F)
 
-test = myglmnet(X, y, family='gaussian', exclude=c(2L))
+ref = glmnet(X, y, family='gaussian', exclude=c(2L), standardize = F, intercept = T)
+
+test = myglmnet(X, y, family='gaussian', exclude=c(2L), standardize = F, intercept = T)
 
 
 ref$beta[,20]

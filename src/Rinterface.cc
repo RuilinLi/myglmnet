@@ -14,7 +14,6 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
 
 GlmFamily *get_family(const char *family) {
     if (strcmp(family, "gaussian") == 0) {
-        Rprintf("this one!\n");
         return new Gaussian();
     }
     if (strcmp(family, "logistic") == 0) {
@@ -23,31 +22,70 @@ GlmFamily *get_family(const char *family) {
     error("invalid family name\n");
 }
 
+void get_xmxs_dense(const double *x, const double *v, int *ju, double *xm,
+                    double *xs, int no, int ni) {
+    for (int j = 0; j < ni; ++j) {
+        if (!ju[j]) {
+            continue;
+        }
+
+        double ex = 0.0;
+        double ex2 = 0.0;
+        for (int i = 0; i < no; ++i) {
+            ex += v[i] * x[j * no + i];
+            ex2 += v[i] * x[j * no + i] * x[j * no + i];
+        }
+        // Assumes sum_{i} v_i = 1
+        double variance = ex2 - ex * ex;
+        if (variance <= 0) {
+            ju[j] = 0;
+            continue;
+        }
+        xm[j] = ex;
+        xs[j] = sqrt(variance);
+    }
+}
+
+void standardize(double *x, const int *ju, double *xm, double *xs, int intr,
+                 int isd, int no, int ni) {
+    if (intr) {
+        for (int j = 0; j < ni; ++j) {
+            if (!ju[j]) {
+                continue;
+            }
+            for (int i = 0; i < no; ++i) {
+                x[j * no + i] -= xm[j];
+            }
+        }
+
+        if (isd) {
+            for (int j = 0; j < ni; ++j) {
+                if (!ju[j]) {
+                    continue;
+                }
+                for (int i = 0; i < no; ++i) {
+                    x[j * no + i] /= xs[j];
+                }
+            }
+        }
+        return;
+    }
+
+    if (isd) {
+        for (int j = 0; j < ni; ++j) {
+            if (!ju[j]) {
+                continue;
+            }
+            for (int i = 0; i < no; ++i) {
+                x[j * no + i] /= xs[j];
+            }
+        }
+    }
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// SEXP test(SEXP x2, SEXP y2, SEXP lambda2, SEXP v2, SEXP intr2, SEXP ju2,
-//           SEXP vp2, SEXP cl2) {
-//     int no = nrows(x2);
-//     int ni = ncols(x2);
-//     DenseM X(no, ni, REAL(x2));
-//     double *y = REAL(y2);
-//     double *lambda = REAL(lambda2);
-//     double *v = REAL(v2);
-//     int intr = asInteger(intr2);
-//     int *ju = INTEGER(ju2);
-//     double *vp = REAL(vp2);
-//     double *cl = REAL(cl2);
-//     int nlambda = length(lambda2);
-//     double alpha = 1.0;
-//     // Rprintf("cl lower is %f \n", cl[]);
-//     // Rprintf("cl upper is %f\n")
-//     glmnetPath(alpha, &X, y, v, intr, ju, vp, cl, ni, 1e-7, 10000,
-//     "logistic",
-//                false, nullptr, lambda, nlambda);
-//     return R_NilValue;
-// }
 
 SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
            SEXP cl2, SEXP nx2, SEXP nlam2, SEXP flmin2, SEXP ulam2,
@@ -58,7 +96,25 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
     // Create matrix object
     int no = nrows(x2);
     int ni = ncols(x2);
-    DenseM X(no, ni, REAL(x2));
+    double *xptr = REAL(x2);
+    int intr = asInteger(intr2);
+    int isd = asInteger(isd2);
+    int *ju = INTEGER(ju2);
+    double *v = REAL(weights2);
+    bool dup_x = (bool)(intr + isd);
+
+    // always compute xm and xs, maybe won't be used
+    double *xm = (double *)malloc(sizeof(double) * ni);
+    double *xs = (double *)malloc(sizeof(double) * ni);
+
+    get_xmxs_dense(REAL(x2), v, ju, xm, xs, no, ni);
+
+    if (dup_x) {
+        xptr = REAL(PROTECT(duplicate(x2)));
+        standardize(xptr, ju, xm, xs, intr, isd, no, ni);
+    }
+
+    DenseM X(no, ni, xptr);
 
     // Create family object
     GlmFamily *fam = get_family(CHAR(STRING_ELT(family2, 0)));
@@ -68,9 +124,7 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
 
     double alpha = asReal(alpha2);
     double *y = REAL(y2);
-    double *v = REAL(weights2);
-    int intr = asInteger(intr2);
-    int *ju = INTEGER(ju2);
+
     double *vp = REAL(vp2);
     double *cl = REAL(cl2);
     int nx = asInteger(nx2);
@@ -99,7 +153,29 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
                has_offset, offset, lambdas, nlambda, mxitnr, flmin, lmu, a0, ca,
                ia, nin, devratio, alm, nlp, nulldev, jerr);
 
+    // scale parameters back if standardization happend
+    if (isd) {
+        for (int m = 0; m < (*lmu); ++m) {
+            for (int k = 0; k < nin[m]; ++k) {
+                ca[m * nx + k] /= xs[ia[k]];
+            }
+        }
+    }
+
+    if (intr) {
+        for (int m = 0; m < (*lmu); ++m) {
+            for (int k = 0; k < nin[m]; ++k) {
+                a0[m] -= ca[m * nx + k] * xm[ia[k]];
+            }
+        }
+    }
+
     delete fam;
+    free(xm);
+    free(xs);
+    if (dup_x) {
+        UNPROTECT(1);
+    }
 
     return R_NilValue;
 }

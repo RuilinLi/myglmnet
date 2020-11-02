@@ -20,6 +20,12 @@ class MatrixGlmnet {
     virtual void compute_eta(double* eta, const double* a, double aint,
                              bool has_offset, const double* offset) = 0;
 
+    // Compute weighted mean and standard deviation of each variable,
+    // ignore variables with ju[j] == 0
+    // if variable is constant, set ju[j] = 0
+    // virtual void get_xmxs(const double* v, const int* ju, double* xm,
+    //                       double* xs) = 0;
+
     static double sumv(const double* v, int len);
     virtual ~MatrixGlmnet();
 
