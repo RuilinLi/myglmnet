@@ -1,4 +1,4 @@
-#include <cmath>
+#include <math.h>
 #include <cstdlib>
 
 #include "glmnetMatrix.h"
@@ -17,7 +17,7 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
 
     for (int j = 0; j < ni; ++j) {
         if (ju[j]) {
-            g[j] = abs(X->dot_product(j, r));
+            g[j] = fabs(X->dot_product(j, r));
 
         } else {
             continue;
@@ -45,7 +45,7 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
                 double gj = X->dot_product(j, r);
                 double aj = a[j];
                 double u = gj + aj * xv[j];
-                double au = abs(u) - vp[j] * ab;
+                double au = fabs(u) - vp[j] * ab;
                 if (au < 0.0) {
                     a[j] = 0.0;
                 } else {
@@ -94,7 +94,7 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
                     if (iy[j] || (!ju[j])) {
                         continue;
                     }
-                    g[j] = abs(X->dot_product(j, r));
+                    g[j] = fabs(X->dot_product(j, r));
                     if (g[j] > ab * vp[j]) {
                         iy[j] = 1;
                         xv[j] = X->vx2(j, v);
@@ -123,7 +123,7 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
                 double gk = X->dot_product(k, r);
                 double ak = a[k];
                 double u = gk + ak * xv[k];
-                double au = abs(u) - vp[k] * ab;
+                double au = fabs(u) - vp[k] * ab;
                 if (au < 0.0) {
                     a[k] = 0.0;
                 } else {

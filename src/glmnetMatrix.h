@@ -1,9 +1,6 @@
 #ifndef GLMNET_MATRIX
 #define GLMNET_MATRIX
 
-#ifdef __APPLE__
-#include <cstdlib>
-#endif
 
 class MatrixGlmnet {
    public:

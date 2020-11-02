@@ -30,18 +30,22 @@ test = myglmnet(X, y, family='gaussian', exclude=c(2L), standardize = F, interce
 
 ## Performance profiling
 library(microbenchmark)
+library(myglmnet)
+library(glmnet)
 n = 1500
 p = 2500
+set.seed(1)
 X = matrix(rnorm(n*p),n,p)
 beta = rnorm(p) * rbinom(p, 1, 0.5)
 y = X%*% beta
 y = y/sd(y)
-# l1 = glmnet(X, y, family='gaussian', exclude=c(2L))
-# l2 = myglmnet(X, y, family='gaussian', exclude=c(2L))
+w = rep(1/n, n)
+l1 = glmnet(X, y, family='gaussian', exclude=c(2L), weights = w)
+l2 = myglmnet(X, y, family='gaussian', exclude=c(2L))
 microbenchmark(
   myglmnet(X, y, family='gaussian', exclude=c(2L)),
   glmnet(X, y, family='gaussian', exclude=c(2L)),
-  times=1L
+  times=3L
 )
 
 
