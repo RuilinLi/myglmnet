@@ -18,7 +18,7 @@ lam = c(0.3, 0.2, 0.15, 0.1, 0.05)
 
 ref = glmnet(X, y2, family='binomial', lambda = lam, standardize = F, intercept = T)
 
-test = myglmnet(X, y2, family='logistic', lamnda = lam,standardize = F, intercept =T)
+test = myglmnet(X, y2, family='logistic', lambda = lam,standardize = F, intercept =T)
 
 max(ref$beta[,10] - test$beta[,10])
 
@@ -28,19 +28,27 @@ ref = glmnet(X, y, family='gaussian', exclude=c(2L), standardize = F, intercept 
 
 test = myglmnet(X, y, family='gaussian', exclude=c(2L), standardize = F, intercept = T)
 
+## Performance profiling
+library(microbenchmark)
+n = 1500
+p = 2500
+X = matrix(rnorm(n*p),n,p)
+beta = rnorm(p) * rbinom(p, 1, 0.5)
+y = X%*% beta
+y = y/sd(y)
+# l1 = glmnet(X, y, family='gaussian', exclude=c(2L))
+# l2 = myglmnet(X, y, family='gaussian', exclude=c(2L))
+microbenchmark(
+  myglmnet(X, y, family='gaussian', exclude=c(2L)),
+  glmnet(X, y, family='gaussian', exclude=c(2L)),
+  times=1L
+)
 
-ref$beta[,20]
-test$beta[,20]
 
 
-w = rep(1/n, n)
-y2 = rep(1.0, n)
-y2[y < median(y)] = 0.0
 
-ref = glmnet(X, y2, family='binomial', intercept = F, standardize = F)
-lambdar = ref$lambda
 
-wrapper(X, y2, lambdar)
+
 
 #
 # ref = glmnet(X, y, family='gaussian', intercept = F, standardize = F, weights = w)
