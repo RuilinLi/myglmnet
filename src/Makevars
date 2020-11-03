@@ -1,1 +1,2 @@
-PKG_CPPFLAGS=-Wall -O3 -ffast-math
+PKG_CPPFLAGS=-Wall -O3 -I/Users/ruilinli/eigen-3.3.8 -march=native
+PKG_LIBS = -lprofiler

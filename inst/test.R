@@ -33,21 +33,32 @@ library(microbenchmark)
 library(myglmnet)
 library(glmnet)
 n = 1500
-p = 2500
+p = 3000
 set.seed(1)
 X = matrix(rnorm(n*p),n,p)
-beta = rnorm(p) * rbinom(p, 1, 0.5)
+beta = rnorm(p) * rbinom(p, 1, 0.3)
 y = X%*% beta
 y = y/sd(y)
 w = rep(1/n, n)
+y2 = rep(1.0, n)
+y2[y < median(y)] = 0.0
 l1 = glmnet(X, y, family='gaussian', exclude=c(2L), weights = w)
 l2 = myglmnet(X, y, family='gaussian', exclude=c(2L))
+
+a1 = myglmnet(X, y2, family='logistic', exclude=c(2L))
+a2 = glmnet(X, y2, family='binomial', exclude=c(2L))
+
 microbenchmark(
   myglmnet(X, y, family='gaussian', exclude=c(2L)),
   glmnet(X, y, family='gaussian', exclude=c(2L)),
   times=3L
 )
 
+microbenchmark(
+  myglmnet(X, y2, family='logistic', exclude=c(2L)),
+  glmnet(X, y2, family='binomial', exclude=c(2L)),
+  times=3L
+)
 
 
 

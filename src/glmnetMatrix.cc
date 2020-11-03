@@ -3,6 +3,7 @@
 #include <math.h>
 
 #include <cstdlib>
+#include <Eigen/Core>
 
 MatrixGlmnet::~MatrixGlmnet() {}
 
@@ -39,21 +40,25 @@ DenseM::~DenseM() { data = nullptr; }
 double DenseM::dot_product(int j, const double *v) {
     // return std::inner_product(data + j * no, data + (j + 1) * no, v, 0.0);
 
-    double result = 0.0;
-    // If there's no auto vectorization then we can do #pragma clang loop
-    // vectorize(enable) interleave(enable)
-    for (int i = 0; i < no; ++i) {
-        result += data[j * no + i] * v[i];
-    }
-    return result;
+    // double result = 0.0;
+    // // If there's no auto vectorization then we can do #pragma clang loop
+    // // vectorize(enable) interleave(enable)
+    // for (int i = 0; i < no; ++i) {
+    //     result += data[j * no + i] * v[i];
+    // }
+    Eigen::Map<const Eigen::VectorXd> x(data + j*no, no);
+    Eigen::Map<const Eigen::VectorXd> y(v, no);
+    return x.dot(y);
 }
 
 double DenseM::vx2(int j, const double *v) {
-    double result = 0.0;
-    for (int i = 0; i < no; ++i) {
-        result += data[j * no + i] * data[j * no + i] * v[i];
-    }
-    return result;
+    // double result = 0.0;
+    // for (int i = 0; i < no; ++i) {
+    //     result += data[j * no + i] * data[j * no + i] * v[i];
+    // }
+    Eigen::Map<const Eigen::ArrayXd> x(data + j*no, no);
+    Eigen::Map<const Eigen::ArrayXd> y(v, no);
+    return (y * x.square()).sum();
 }
 
 void DenseM::update_res(int j, double d, const double *v,
@@ -65,18 +70,26 @@ void DenseM::update_res(int j, double d, const double *v,
 
 void DenseM::compute_eta(double *__restrict eta, const double *a, double aint,
                          bool has_offset, const double *offset) {
-    for (int i = 0; i < no; ++i) {
-        eta[i] = aint;
-    }
-    for (int j = 0; j < ni; ++j) {
-        double aj = a[j];
-        for (int i = 0; i < no; ++i) {
-            eta[i] += data[j * no + i] * aj;
-        }
-    }
+    Eigen::Map<Eigen::VectorXd> eta_map(eta, no);
+    Eigen::Map<const Eigen::MatrixXd> X(data, no, ni);
+    Eigen::Map<const Eigen::VectorXd> a_map(a, ni);
+
+    eta_map = (X * a_map).array() + aint;
+    // for (int i = 0; i < no; ++i) {
+    //     eta[i] = aint;
+    // }
+    // for (int j = 0; j < ni; ++j) {
+    //     double aj = a[j];
+    //     for (int i = 0; i < no; ++i) {
+    //         eta[i] += data[j * no + i] * aj;
+    //     }
+    // }
     if (has_offset) {
-        for (int i = 0; i < no; ++i) {
-            eta[i] += offset[i];
-        }
+        Eigen::Map<const Eigen::VectorXd> offset_map(offset, no);
+        eta_map += offset_map;
+
+        // for (int i = 0; i < no; ++i) {
+        //     eta[i] += offset[i];
+        // }
     }
 }
