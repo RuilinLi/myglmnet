@@ -6,3 +6,4 @@
 *.so
 inst/prof.out
 inst/build.R
+.vscode/
