@@ -1,5 +1,4 @@
 #include <math.h>
-#include <cstdlib>
 
 #include "glmnetMatrix.h"
 void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,

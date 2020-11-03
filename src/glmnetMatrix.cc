@@ -2,7 +2,14 @@
 
 #include <math.h>
 
-#include <cstdlib>
+// This will probably be fixed in a new version of Eigen, for now
+#ifndef __clang__
+#if __GNUC__ < 8
+#define _mm256_set_m128d(vh, vl) \
+    _mm256_insertf128_pd(_mm256_castpd128_pd256(vl), (vh), 1)
+#endif
+#endif
+
 #include <Eigen/Core>
 
 MatrixGlmnet::~MatrixGlmnet() {}
@@ -17,7 +24,7 @@ double MatrixGlmnet::max_grad(const double *r, const int *ju,
         if ((!ju[i]) || (vp[i] <= 0.0)) {
             continue;
         }
-        result = fmax(result, fabs(this->dot_product(i, r))/vp[i]);
+        result = fmax(result, fabs(this->dot_product(i, r)) / vp[i]);
     }
     return result;
 }
@@ -46,7 +53,7 @@ double DenseM::dot_product(int j, const double *v) {
     // for (int i = 0; i < no; ++i) {
     //     result += data[j * no + i] * v[i];
     // }
-    Eigen::Map<const Eigen::VectorXd> x(data + j*no, no);
+    Eigen::Map<const Eigen::VectorXd> x(data + j * no, no);
     Eigen::Map<const Eigen::VectorXd> y(v, no);
     return x.dot(y);
 }
@@ -56,7 +63,7 @@ double DenseM::vx2(int j, const double *v) {
     // for (int i = 0; i < no; ++i) {
     //     result += data[j * no + i] * data[j * no + i] * v[i];
     // }
-    Eigen::Map<const Eigen::ArrayXd> x(data + j*no, no);
+    Eigen::Map<const Eigen::ArrayXd> x(data + j * no, no);
     Eigen::Map<const Eigen::ArrayXd> y(v, no);
     return (y * x.square()).sum();
 }
