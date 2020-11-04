@@ -11,7 +11,7 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
               double thr, int maxit, double *__restrict a, double *aint,
               double *__restrict g, int *__restrict ia, int *__restrict iy,
               int *iz, int *__restrict mm, int *nino, double *rsqc, int *nlp,
-              double *__restrict xv, int *jerr);
+              double *__restrict xv, int *jerr, int irls_iter);
 
 void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
                 int intr, const int *ju, const double *vp, const double *cl,
@@ -79,7 +79,7 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
 
             wls_base(alm0, almc, alpha, m, no, ni, X, z, w, intr, ju, vp, cl,
                      nx, thr, maxit, a, &aint, g, ia, iy, &iz, mm, &nino, &rsqc,
-                     nlp, xv, jerr);
+                     nlp, xv, jerr, j);
 
             assert((*jerr) == 0);
 

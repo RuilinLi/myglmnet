@@ -7,7 +7,7 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
               double thr, int maxit, double *__restrict a, double *aint,
               double *__restrict g, int *__restrict ia, int *__restrict iy,
               int *iz, int *__restrict mm, int *nino, double *rsqc, int *nlp,
-              double *__restrict xv, int *jerr) {
+              double *__restrict xv, int *jerr, int irls_iter) {
     // double *__restrict xv = (double *)malloc(sizeof(double) * ni);
     double xmz = MatrixGlmnet::sumv(v, no);
     double ab = almc * alpha;
@@ -15,17 +15,18 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
     double tlam = alpha * (2.0 * almc - alm0);
 
     for (int j = 0; j < ni; ++j) {
-        if (ju[j]) {
-            g[j] = fabs(X->dot_product(j, r));
-
-        } else {
+        if(!ju[j]) {
             continue;
         }
 
-        if (iy[j]) {
-            xv[j] = X->vx2(j, v);
-        } else if (g[j] > tlam * vp[j]) {
-            iy[j] = 1;
+        if ((irls_iter == 0) && (iy[j] == 0)) {
+            g[j] = fabs(X->dot_product(j, r));
+            if(g[j] > tlam * vp[j]) {
+                iy[j] = 1;
+            }
+        } 
+
+        if(iy[j]) {
             xv[j] = X->vx2(j, v);
         }
     }
