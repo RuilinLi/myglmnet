@@ -1,5 +1,4 @@
 #include <math.h>
-
 #include "glmnetMatrix.h"
 
 // Computation heavily adapted from
@@ -96,8 +95,8 @@ void PlinkMatrix::update_res(int j, double d, const double* weights,
                              double* r) {
     const uintptr_t* genoarr = &(data[j * word_ct]);
 
-    const uint32_t word_ct = DivUp(no, kBitsPerWordD2);
-    for (uint32_t widx = 0; widx != word_ct; ++widx) {
+    const uint32_t word_ct_local = DivUp(no, kBitsPerWordD2);
+    for (uint32_t widx = 0; widx != word_ct_local; ++widx) {
         const uintptr_t geno_word = genoarr[widx];
         if (!geno_word) {
             continue;
@@ -135,35 +134,37 @@ void PlinkMatrix::compute_eta(double* eta, const double* weights, double aint,
     for (int i = 0; i < no; ++i) {
         eta[i] = aint;
     }
-    const uint32_t word_ct = DivUp(no, kBitsPerWordD2);
+
+    // This is only useful for small no, maybe I should just not use it at all?
+    const uint32_t word_ct_local = DivUp(no, kBitsPerWordD2);
     for (int j = 0; j < ni; ++j) {
         const uintptr_t* genoarr = &(data[j * word_ct]);
         double ximpute = xim[j];
+        double wj = weights[j];
 
-        for (uint32_t widx = 0; widx != word_ct; ++widx) {
+        for (uint32_t widx = 0; widx != word_ct_local; ++widx) {
             const uintptr_t geno_word = genoarr[widx];
             if (!geno_word) {
                 continue;
             }
-            const double* cur_weights = &(weights[widx * kBitsPerWordD2]);
             uintptr_t geno_word1 = geno_word & kMask5555;
             uintptr_t geno_word2 = (geno_word >> 1) & kMask5555;
             uintptr_t geno_missing_word = geno_word1 & geno_word2;
             geno_word1 ^= geno_missing_word;
             while (geno_word1) {
                 const uint32_t sample_idx_lowbits = ctzw(geno_word1) / 2;
-                eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += cur_weights[sample_idx_lowbits];
+                eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += wj;
                 geno_word1 &= geno_word1 - 1;
             }
             geno_word2 ^= geno_missing_word;
             while (geno_word2) {
                 const uint32_t sample_idx_lowbits = ctzw(geno_word2) / 2;
-                eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += 2 * cur_weights[sample_idx_lowbits];
+                eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += 2 * wj;
                 geno_word2 &= geno_word2 - 1;
             }
             while (geno_missing_word) {
                 const uint32_t sample_idx_lowbits = ctzw(geno_missing_word) / 2;
-                eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += ximpute * cur_weights[sample_idx_lowbits];
+                eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += ximpute * wj;
                 geno_missing_word &= geno_missing_word - 1;
             }
         }

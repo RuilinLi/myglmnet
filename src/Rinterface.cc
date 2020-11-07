@@ -87,7 +87,6 @@ void standardize(double *x, const int *ju, double *xm, double *xs, int intr,
 MatrixGlmnet *get_matrix(SEXP xptr, const char *mattype, int no, int ni,
                          int isd, int intr, int *ju, double *xm, double *xs,
                          const double *v, const double *xim) {
-    Rprintf("matrix type is %s", mattype);
     if (strcmp(mattype, "Dense") == 0) {
         double *x = REAL(xptr);
         get_xmxs_dense(x, v, ju, xm, xs, no, ni);
@@ -109,11 +108,15 @@ MatrixGlmnet *get_matrix(SEXP xptr, const char *mattype, int no, int ni,
 extern "C" {
 #endif
 
-SEXP testplink(SEXP x2, SEXP no2, SEXP ni2, SEXP xim2, SEXP v2) {
+SEXP testplink(SEXP x2, SEXP no2, SEXP ni2, SEXP xim2, SEXP v2, SEXP eta2) {
     uintptr_t *xptr = (uintptr_t *)R_ExternalPtrAddr(x2);
     MatrixGlmnet *x =
         new PlinkMatrix(asInteger(no2), asInteger(ni2), xptr, REAL(xim2));
-    Rprintf("result is %f\n", x->dot_product(0, REAL(v2)));
+    double *eta = REAL(eta2);
+    double *v = REAL(v2);
+    x->compute_eta(eta, v, 0.0,
+                              false, nullptr);
+
     return R_NilValue;
 }
 

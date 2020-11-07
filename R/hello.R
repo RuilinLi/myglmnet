@@ -15,8 +15,8 @@ wrapper <- function(x, y, lambda) {
     NULL
 }
 #' @export
-mytest = function(xptr, xim, no, ni, v) {
-    .Call('testplink',xptr, no, ni, xim, v)
+mytest = function(xptr, xim, no, ni, v, eta) {
+    .Call('testplink',xptr, no, ni, xim, v, eta)
 }
 #tools::package_native_routine_registration_skeleton('/Users/ruilinli/myglmnet', con='/Users/ruilinli/myglmnet/src/init.c')
 #devtools::document('/Users/ruilinli/myglmnet')
@@ -131,6 +131,7 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     is.sparse <- FALSE
     ix <- jx <- NULL
     if (inherits(x, "sparseMatrix")) {
+        stop("sparse matrices not implemented yet")
         ## Sparse case
         is.sparse <- TRUE
         x <- as(x, "CsparseMatrix")
@@ -165,8 +166,14 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
         mxitnr <- 1
     }
     mxitnr <- as.integer(mxitnr)
+
+    if(inherits(x, "PlinkMatrix")){
+        x_list = list("Plink", np[1], np[2], x@ptr, x@xim)
+    } else {
+        x_list = list("Dense", np[1], np[2], x)
+    }
     
-    .Call("solve", alpha, x, y, weights, ju, vp, cl, nx, nlam, flmin, ulam, thresh, 
+    .Call("solve", alpha, x_list, y, weights, ju, vp, cl, nx, nlam, flmin, ulam, thresh, 
         isd, intr, maxit, lmu, a0, ca, ia, nin, devratio, alm, nlp, family, offset, 
         has_offset, mxitnr, nulldev, jerr)
     
