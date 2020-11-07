@@ -1,7 +1,7 @@
 #ifndef GLMNET_MATRIX
 #define GLMNET_MATRIX
 
-
+#include <stdint.h>
 class MatrixGlmnet {
    public:
     // Compute the inner product of X[,j] and v
@@ -52,6 +52,26 @@ class DenseM : public MatrixGlmnet {
 
    private:
     const double* data;
+};
+
+class PlinkMatrix : public MatrixGlmnet {
+   public:
+    PlinkMatrix(int no, int ni, const uintptr_t* x, const double* xim);
+    ~PlinkMatrix();
+
+    double dot_product(int j, const double* v);
+
+    double vx2(int j, const double* v);
+
+    void update_res(int j, double d, const double* v, double* r);
+
+    void compute_eta(double* eta, const double* a, double aint, bool has_offset,
+                     const double* offset);
+    
+   private:
+     const uintptr_t* data;
+     uint32_t word_ct;
+     const double *xim; // mean imputation
 };
 
 #endif

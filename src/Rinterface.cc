@@ -84,9 +84,38 @@ void standardize(double *x, const int *ju, double *xm, double *xs, int intr,
     }
 }
 
+MatrixGlmnet *get_matrix(SEXP xptr, const char *mattype, int no, int ni,
+                         int isd, int intr, int *ju, double *xm, double *xs,
+                         const double *v, const double *xim) {
+    Rprintf("matrix type is %s", mattype);
+    if (strcmp(mattype, "Dense") == 0) {
+        double *x = REAL(xptr);
+        get_xmxs_dense(x, v, ju, xm, xs, no, ni);
+        standardize(x, ju, xm, xs, intr, isd, no, ni);
+        MatrixGlmnet *result = new DenseM(no, ni, x);
+        return result;
+    }
+
+    if (strcmp(mattype, "Plink") == 0) {
+        uintptr_t *x = (uintptr_t *)R_ExternalPtrAddr(xptr);
+        MatrixGlmnet *result = new PlinkMatrix(no, ni, x, xim);
+        return result;
+    }
+
+    error("invalid matrix type\n");
+}
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+SEXP testplink(SEXP x2, SEXP no2, SEXP ni2, SEXP xim2, SEXP v2) {
+    uintptr_t *xptr = (uintptr_t *)R_ExternalPtrAddr(x2);
+    MatrixGlmnet *x =
+        new PlinkMatrix(asInteger(no2), asInteger(ni2), xptr, REAL(xim2));
+    Rprintf("result is %f\n", x->dot_product(0, REAL(v2)));
+    return R_NilValue;
+}
 
 SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
            SEXP cl2, SEXP nx2, SEXP nlam2, SEXP flmin2, SEXP ulam2,
@@ -96,28 +125,30 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
            SEXP mxitnr2, SEXP nulldev2, SEXP jerr2) {
     // Create matrix object
     // ProfilerStart("/Users/ruilinli/myglmnet/inst/prof.out");
-
-    int no = nrows(x2);
-    int ni = ncols(x2);
-    double *xptr = REAL(x2);
+    const char *mattype = CHAR(STRING_ELT(VECTOR_ELT(x2, 0), 0));
+    int no = asInteger(VECTOR_ELT(x2, 1));
+    int ni = asInteger(VECTOR_ELT(x2, 2));
+    SEXP xptr = VECTOR_ELT(x2, 3);
+    double *xim = nullptr;  // only for plink matrix
+    if (strcmp(mattype, "Plink") == 0) {
+        xim = REAL(VECTOR_ELT(x2, 4));
+    }
     int intr = asInteger(intr2);
     int isd = asInteger(isd2);
     int *ju = INTEGER(ju2);
     double *v = REAL(weights2);
     bool dup_x = (bool)(intr + isd);
+    dup_x = dup_x && (strcmp(mattype, "Dense") == 0);
+    if (dup_x) {
+        xptr = PROTECT(duplicate(xptr));
+    }
 
     // always compute xm and xs, maybe won't be used
     double *xm = (double *)malloc(sizeof(double) * ni);
     double *xs = (double *)malloc(sizeof(double) * ni);
 
-    get_xmxs_dense(REAL(x2), v, ju, xm, xs, no, ni);
-
-    if (dup_x) {
-        xptr = REAL(PROTECT(duplicate(x2)));
-        standardize(xptr, ju, xm, xs, intr, isd, no, ni);
-    }
-
-    DenseM X(no, ni, xptr);
+    MatrixGlmnet *X =
+        get_matrix(xptr, mattype, no, ni, isd, intr, ju, xm, xs, v, xim);
 
     // Create family object
     GlmFamily *fam = get_family(CHAR(STRING_ELT(family2, 0)));
@@ -152,7 +183,7 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
     int *jerr = INTEGER(jerr2);
     double *nulldev = REAL(nulldev2);
 
-    glmnetPath(alpha, &X, y, v, intr, ju, vp, cl, nx, thr, maxit, fam,
+    glmnetPath(alpha, X, y, v, intr, ju, vp, cl, nx, thr, maxit, fam,
                has_offset, offset, lambdas, nlambda, mxitnr, flmin, lmu, a0, ca,
                ia, nin, devratio, alm, nlp, nulldev, jerr);
 
@@ -179,7 +210,8 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
     if (dup_x) {
         UNPROTECT(1);
     }
-    //ProfilerStop();
+    delete X;
+    // ProfilerStop();
     return R_NilValue;
 }
 

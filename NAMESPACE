@@ -3,6 +3,7 @@
 S3method(print,glmnet)
 export(glmnet.control)
 export(myglmnet)
+export(mytest)
 export(wrapper)
 importFrom(Matrix,drop0)
 useDynLib(myglmnet, .registration = TRUE)

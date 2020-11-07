@@ -14,6 +14,13 @@ wrapper <- function(x, y, lambda) {
     # .Call('test', x, y, lambda, weight, 0L, ju, vp, cl, PACKAGE = 'myglmnet')
     NULL
 }
+#' @export
+mytest = function(xptr, xim, no, ni, v) {
+    .Call('testplink',xptr, no, ni, xim, v)
+}
+#tools::package_native_routine_registration_skeleton('/Users/ruilinli/myglmnet', con='/Users/ruilinli/myglmnet/src/init.c')
+#devtools::document('/Users/ruilinli/myglmnet')
+#install.packages('/Users/ruilinli/myglmnet', repo=NULL,type='source')
 
 #' @export
 myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, offset = NULL, 
