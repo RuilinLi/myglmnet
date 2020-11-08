@@ -162,8 +162,13 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
         has_offset <- 1L
     }
     mxitnr <- internal.parms$mxitnr
+    alpha_mod <- alpha 
     if (family == "gaussian") {
         mxitnr <- 1
+        sdy <- sd(y)
+        y <- y/sdy
+        ulam <- ulam * (1 - alpha + alpha/sdy)
+        alpha_mod <- alpha / (sdy * (1- alpha)+ alpha) #modified alpha, keep original
     }
     mxitnr <- as.integer(mxitnr)
 
@@ -173,12 +178,19 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
         x_list = list("Dense", np[1], np[2], x)
     }
     
-    .Call("solve", alpha, x_list, y, weights, ju, vp, cl, nx, nlam, flmin, ulam, thresh, 
+    .Call("solve", alpha_mod, x_list, y, weights, ju, vp, cl, nx, nlam, flmin, ulam, thresh, 
         isd, intr, maxit, lmu, a0, ca, ia, nin, devratio, alm, nlp, family, offset, 
         has_offset, mxitnr, nulldev, jerr)
     
     # if (trace.it) { if (relax) cat('Training Fit\n') pb <- createPB(min = 0, max =
     # nlam, initial = 0, style = 3) }
+
+    # adjust the result back to original scale
+    if (family == "gaussian") {
+        ca <- ca * sdy
+        a0 <- a0 * sdy
+        alm <- alm/(1 - alpha + alpha/sdy)
+    }
     fit <- list(jerr = jerr, a0 = a0, nin = nin, lmu = lmu, alm = alm, ca = ca, ia = ia)
     outlist <- getcoef(fit, nvars, nx, vnames)
     dev <- devratio[seq(lmu)]

@@ -2,11 +2,15 @@
 #install.packages('/Users/ruilinli/myglmnet', repo=NULL,type='source')
 library(pgenlibr)
 library(myglmnet)
-n = 100
-p = 100
+library(microbenchmark)
 
+n = 1000
+p = 2000
+t0 = Sys.time()
 m = PlinkMatrix("/Users/ruilinli/plink-ng/toy_data.pgen", 1:n, 1:p)
 m = actualize(m)
+t1 = Sys.time()
+t1 - t0
 #plinktest(m$pgen, rnorm(100))
 pgen <- pgenlibr::NewPgen("/Users/ruilinli/plink-ng/toy_data.pgen", pvar = NULL, sample_subset =1:n)
 m2 = ReadList(pgen, 1:p, meanimpute =TRUE)
@@ -16,12 +20,19 @@ mytest(m@ptr, m@xim, n, p, v,eta)
 beta = rnorm(p) * rbinom(p,1, 0.3)
 y = m2 %*% beta
 y = y/sd(y)
+microbenchmark(
+  myglmnet(m, y, family='gaussian', standardize=F, intercept=F),
+  myglmnet(m2, y, family='gaussian', standardize=F, intercept=F),
+  glmnet(m2, y, family='gaussian', standardize=F, intercept=F),
+  times=1L
+)
 a1 = myglmnet(m, y, family='gaussian', standardize=F, intercept=F)
 a1 = myglmnet(m, y, family='gaussian', standardize=F, intercept=F)
 a1 = myglmnet(m, y, family='gaussian', standardize=F, intercept=F)
 
+y = m2 %*% beta
 a2 = myglmnet(m2, y, family='gaussian', standardize=F, intercept=F)
-
+a1 = glmnet(m2, y, family='gaussian', standardize=F, intercept=F)
 y2 = rep(1.0, p)
 y2[y<median(y)] = 0.0
 
