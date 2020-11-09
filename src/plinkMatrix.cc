@@ -56,50 +56,76 @@ void GetWeightsByValueNoDosage(const double* weights, const uintptr_t* genoarr,
     double result = 0.0;
     double result2 = 0.0;
     double miss_weight = 0.0;
-    for (uint32_t widx = 0; widx != word_ct; ++widx)
+#pragma omp parallel
     {
-        const uintptr_t geno_word = genoarr[widx];
+        int total_threads = omp_get_num_threads();
+        int threadid = omp_get_thread_num();
+        int size = (word_ct + total_threads * 8 - 1) / (total_threads * 8);
+        size *= 8;
+        uint32_t start = threadid * size;
+        uint32_t end = (1 + threadid) * size;
+        double result_local = 0.0;
+        double result2_local = 0.0;
+        double miss_weight_local = 0.0;
+        double result0_local = 0.0;
+        if (end > word_ct)
+        {
+            end = word_ct;
+        }
+        for (uint32_t widx = start; widx <end; ++widx)
+        {
+            const uintptr_t geno_word = genoarr[widx];
 
-        const double *cur_weights = &(weights[widx * kBitsPerWordD2]);
-        if((!geno_word) && (widx < word_ct - 1)) {
-            for(int i = 0; i < kBitsPerWordD2; ++i) {
-                result0 += cur_weights[i];
+            const double *cur_weights = &(weights[widx * kBitsPerWordD2]);
+            if ((!geno_word) && (widx < word_ct - 1))
+            {
+                for (int i = 0; i < kBitsPerWordD2; ++i)
+                {
+                    result0_local += cur_weights[i];
+                }
+                continue;
             }
-            continue;
+            uintptr_t geno_word1 = geno_word & kMask5555;
+            uintptr_t geno_word2 = (geno_word >> 1) & kMask5555;
+            uintptr_t geno_word0 = (~geno_word1) & (~geno_word2) & kMask5555;
+            if (widx == (word_ct - 1))
+            {
+                ZeroTrailingNyps(trailingNyps_keep, &geno_word0);
+            }
+            uintptr_t geno_missing_word = geno_word1 & geno_word2;
+            while (geno_word0)
+            {
+                const uint32_t sample_idx_lowbits = ctzw(geno_word0) / 2;
+                result0_local += cur_weights[sample_idx_lowbits];
+                geno_word0 &= geno_word0 - 1;
+            }
+            geno_word1 ^= geno_missing_word;
+            while (geno_word1)
+            {
+                const uint32_t sample_idx_lowbits = ctzw(geno_word1) / 2;
+                result_local += cur_weights[sample_idx_lowbits];
+                geno_word1 &= geno_word1 - 1;
+            }
+            geno_word2 ^= geno_missing_word;
+            while (geno_word2)
+            {
+                const uint32_t sample_idx_lowbits = ctzw(geno_word2) / 2;
+                result2_local += cur_weights[sample_idx_lowbits];
+                geno_word2 &= geno_word2 - 1;
+            }
+            while (geno_missing_word)
+            {
+                const uint32_t sample_idx_lowbits = ctzw(geno_missing_word) / 2;
+                miss_weight_local += cur_weights[sample_idx_lowbits];
+                geno_missing_word &= geno_missing_word - 1;
+            }
         }
-        uintptr_t geno_word1 = geno_word & kMask5555;
-        uintptr_t geno_word2 = (geno_word >> 1) & kMask5555;
-        uintptr_t geno_word0 = (~geno_word1) & (~geno_word2) & kMask5555;
-        if (widx == (word_ct - 1))
+        #pragma omp critical
         {
-            ZeroTrailingNyps(trailingNyps_keep, &geno_word0);
-        }
-        uintptr_t geno_missing_word = geno_word1 & geno_word2;
-        while (geno_word0)
-        {
-            const uint32_t sample_idx_lowbits = ctzw(geno_word0) / 2;
-            result0 += cur_weights[sample_idx_lowbits];
-            geno_word0 &= geno_word0 - 1;
-        }
-        geno_word1 ^= geno_missing_word;
-        while (geno_word1)
-        {
-            const uint32_t sample_idx_lowbits = ctzw(geno_word1) / 2;
-            result += cur_weights[sample_idx_lowbits];
-            geno_word1 &= geno_word1 - 1;
-        }
-        geno_word2 ^= geno_missing_word;
-        while (geno_word2)
-        {
-            const uint32_t sample_idx_lowbits = ctzw(geno_word2) / 2;
-            result2 += cur_weights[sample_idx_lowbits];
-            geno_word2 &= geno_word2 - 1;
-        }
-        while (geno_missing_word)
-        {
-            const uint32_t sample_idx_lowbits = ctzw(geno_missing_word) / 2;
-            miss_weight += cur_weights[sample_idx_lowbits];
-            geno_missing_word &= geno_missing_word - 1;
+            result += result_local;
+            result2 += result2_local;
+            miss_weight += miss_weight_local;
+            result0 += result0_local;
         }
     }
 
