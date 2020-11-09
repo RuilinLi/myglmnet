@@ -3,7 +3,7 @@
 #include "Rinternals.h"
 #include "glmfamily.h"
 #include "glmnetMatrix.h"
-//#include "gperftools/profiler.h"
+#include "gperftools/profiler.h"
 
 void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
                 int intr, const int *ju, const double *vp, const double *cl,
@@ -97,7 +97,7 @@ MatrixGlmnet *get_matrix(SEXP xptr, const char *mattype, int no, int ni,
 
     if (strcmp(mattype, "Plink") == 0) {
         uintptr_t *x = (uintptr_t *)R_ExternalPtrAddr(xptr);
-        MatrixGlmnet *result = new PlinkMatrix(no, ni, x, xim);
+        MatrixGlmnet *result = new PlinkMatrix(no, ni, x, xim, intr);
         return result;
     }
 
@@ -111,7 +111,7 @@ extern "C" {
 SEXP testplink(SEXP x2, SEXP no2, SEXP ni2, SEXP xim2, SEXP v2, SEXP eta2) {
     uintptr_t *xptr = (uintptr_t *)R_ExternalPtrAddr(x2);
     MatrixGlmnet *x =
-        new PlinkMatrix(asInteger(no2), asInteger(ni2), xptr, REAL(xim2));
+        new PlinkMatrix(asInteger(no2), asInteger(ni2), xptr, REAL(xim2), 0);
     double *eta = REAL(eta2);
     double *v = REAL(v2);
     x->compute_eta(eta, v, 0.0,
@@ -127,7 +127,7 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
            SEXP nlp2, SEXP family2, SEXP offset2, SEXP has_offset2,
            SEXP mxitnr2, SEXP nulldev2, SEXP jerr2) {
     // Create matrix object
-    // ProfilerStart("/Users/ruilinli/myglmnet/inst/prof.out");
+    ProfilerStart("/home/ruilinli/snpnettest/myglmnet/inst/prof.out");
     const char *mattype = CHAR(STRING_ELT(VECTOR_ELT(x2, 0), 0));
     int no = asInteger(VECTOR_ELT(x2, 1));
     int ni = asInteger(VECTOR_ELT(x2, 2));
@@ -199,10 +199,26 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
         }
     }
 
-    if (intr) {
-        for (int m = 0; m < (*lmu); ++m) {
-            for (int k = 0; k < nin[m]; ++k) {
-                a0[m] -= ca[m * nx + k] * xm[ia[k]];
+    if (intr)
+    {
+        if (strcmp(mattype, "Plink") == 0)
+        {
+            for (int m = 0; m < (*lmu); ++m)
+            {
+                for (int k = 0; k < nin[m]; ++k)
+                {
+                    a0[m] -= ca[m * nx + k] * xim[ia[k]];
+                }
+            }
+        }
+        else
+        {
+            for (int m = 0; m < (*lmu); ++m)
+            {
+                for (int k = 0; k < nin[m]; ++k)
+                {
+                    a0[m] -= ca[m * nx + k] * xm[ia[k]];
+                }
             }
         }
     }
@@ -214,7 +230,7 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
         UNPROTECT(1);
     }
     delete X;
-    // ProfilerStop();
+    ProfilerStop();
     return R_NilValue;
 }
 

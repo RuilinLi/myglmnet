@@ -30,11 +30,13 @@ double MatrixGlmnet::max_grad(const double *r, const int *ju,
 }
 
 double MatrixGlmnet::sumv(const double *v, int len) {
-    double result = 0.0;
-    for (int i = 0; i < len; ++i) {
-        result += v[i];
-    }
-    return result;
+    // double result = 0.0;
+    // for (int i = 0; i < len; ++i) {
+    //     result += v[i];
+    // }
+    // return result;
+    Eigen::Map<const Eigen::ArrayXd> vmap(v, len);
+    return vmap.sum();
 }
 
 DenseM::DenseM(int no, int ni, const double *x) {

@@ -62,11 +62,12 @@ void GetWeightsByValueNoDosage(const double* weights, const uintptr_t* genoarr,
 }
 
 PlinkMatrix::PlinkMatrix(int no, int ni, const uintptr_t* x,
-                         const double* xim) {
+                         const double* xim, int intr) {
     this->no = no;
     this->ni = ni;
     data = x;
     this->xim = xim;
+    this->center = (bool)intr;
     const uint32_t cache_line_ct = DivUp(no, kNypsPerCacheline);
     word_ct = kWordsPerCacheline * cache_line_ct;
 }
@@ -81,6 +82,9 @@ double PlinkMatrix::dot_product(int j, const double* v) {
     double buf[3];
     GetWeightsByValueNoDosage(v, &(data[j * word_ct]), no, buf);
     double result = buf[0] + 2 * buf[1] + buf[2] * xim[j];
+    if(center) {
+        result -= xim[j] * MatrixGlmnet::sumv(v, no);
+    }
     return result;
 }
 
@@ -88,6 +92,11 @@ double PlinkMatrix::vx2(int j, const double* v) {
     double buf[3];
     GetWeightsByValueNoDosage(v, &(data[j * word_ct]), no, buf);
     double result = buf[0] + 4 * buf[1] + buf[2] * xim[j] * xim[j];
+    if(center) {
+        double l1 = (buf[0] + 2 * buf[1] + buf[2] * xim[j]) * 2 * xim[j];
+        double l2 = xim[j] * xim[j] * MatrixGlmnet::sumv(v, no);
+        result += (l2 - l1);    
+    }
     return result;
 }
 
@@ -124,6 +133,11 @@ void PlinkMatrix::update_res(int j, double d, const double* weights,
             r[widx * kBitsPerWordD2 + sample_idx_lowbits] -=
                 xim[j] * d * cur_weights[sample_idx_lowbits];
             geno_missing_word &= geno_missing_word - 1;
+        }
+    }
+    if(center) {
+        for(int i = 0; i < no; ++i) {
+            r[i] += d * weights[i] * xim[j];
         }
     }
     return;
@@ -174,4 +188,14 @@ void PlinkMatrix::compute_eta(double* eta, const double* weights, double aint,
             eta[i] += offset[i];
         }
     }
+    if(center){
+        double inner = 0;
+        for(int j = 0; j < ni; ++j) {
+            inner += xim[j] * weights[j];
+        }
+        for(int i = 0; i < no; ++i) {
+            eta[i] -= inner;
+        }
+    }
+
 }
