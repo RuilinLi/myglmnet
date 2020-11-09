@@ -39,6 +39,13 @@ double MatrixGlmnet::sumv(const double *v, int len) {
     return vmap.sum();
 }
 
+void MatrixGlmnet::update_res_eigen(double* r, const double *v, double d, int len) {
+
+    Eigen::Map<Eigen::ArrayXd> rmap(r, len);
+    Eigen::Map<const Eigen::ArrayXd> vmap(v, len);
+    rmap += d * vmap;
+}
+
 DenseM::DenseM(int no, int ni, const double *x) {
     this->no = no;
     this->ni = ni;

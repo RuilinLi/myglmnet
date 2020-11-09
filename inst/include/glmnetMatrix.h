@@ -24,6 +24,7 @@ class MatrixGlmnet {
     //                       double* xs) = 0;
 
     static double sumv(const double* v, int len);
+    static void update_res_eigen(double* r, const double *v, double d, int len);
     virtual ~MatrixGlmnet();
 
     int get_no();

@@ -3,7 +3,7 @@
 #include "Rinternals.h"
 #include "glmfamily.h"
 #include "glmnetMatrix.h"
-#include "gperftools/profiler.h"
+// #include "gperftools/profiler.h"
 
 void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
                 int intr, const int *ju, const double *vp, const double *cl,
@@ -127,7 +127,7 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
            SEXP nlp2, SEXP family2, SEXP offset2, SEXP has_offset2,
            SEXP mxitnr2, SEXP nulldev2, SEXP jerr2) {
     // Create matrix object
-    ProfilerStart("/home/ruilinli/snpnettest/myglmnet/inst/prof.out");
+    // ProfilerStart("/home/ruilinli/snpnettest/myglmnet/inst/prof.out");
     const char *mattype = CHAR(STRING_ELT(VECTOR_ELT(x2, 0), 0));
     int no = asInteger(VECTOR_ELT(x2, 1));
     int ni = asInteger(VECTOR_ELT(x2, 2));
@@ -230,7 +230,7 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
         UNPROTECT(1);
     }
     delete X;
-    ProfilerStop();
+    //ProfilerStop();
     return R_NilValue;
 }
 

@@ -1,2 +1,3 @@
-PKG_CPPFLAGS=-Wall -O3 -I../inst/include -I../inst/include/eigen -march=native -I/home/ruilinli/gperf/include
-PKG_LIBS = -L/home/ruilinli/gperf/lib -lprofiler 
+PKG_CPPFLAGS=-Wall -O3 -I../inst/include -I../inst/include/eigen -march=native 
+#-I/home/ruilinli/gperf/include
+#PKG_LIBS = -L/home/ruilinli/gperf/lib -lprofiler 
