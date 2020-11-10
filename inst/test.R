@@ -105,8 +105,8 @@ y = y/sd(y)
 w = rep(1/n, n)
 y2 = rep(1.0, n)
 y2[y < median(y)] = 0.0
-l1 = glmnet(X, y, family='gaussian', exclude=c(2L), weights = w)
-l2 = myglmnet(X, y, family='gaussian', exclude=c(2L))
+l1 = glmnet(X, y, family='gaussian',  weights = w)
+l2 = myglmnet(X, y, family='gaussian')
 
 a1 = myglmnet(X, y2, family='logistic', exclude=c(2L))
 a2 = glmnet(X, y2, family='binomial', exclude=c(2L))
@@ -116,6 +116,17 @@ microbenchmark(
   glmnet(X, y, family='gaussian', exclude=c(2L)),
   times=3L
 )
+
+# warm start test
+beta0 = l1$beta[,50]
+lam = l1$lambda[51:length(l1$lambda)]
+a3 = myglmnet(X, y, family='gaussian', beta0 =beta0, lambda=lam)
+a4 = glmnet(X, y, family='gaussian', lambda = lam)
+
+beta0 = a2$beta[,50]
+lam = a2$lambda[51:length(a2$lambda)]
+a3 = myglmnet(X, y2, family='logistic', beta0 =beta0, lambda=lam)
+a4 = glmnet(X, y2, family='binomial', lambda = lam)
 
 microbenchmark(
   myglmnet(X, y2, family='logistic', exclude=c(2L)),

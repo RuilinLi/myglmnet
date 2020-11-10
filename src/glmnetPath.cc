@@ -19,7 +19,7 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
                 double *offset, const double *ulambdas, int nlambda, int mxitnr,
                 const double flmin, int *lmu, double *a0, double *ca, int *ia,
                 int *nin, double *devratio_vec, double *alm, int *nlp,
-                double *nulldev_ptr, int *jerr) {
+                double *nulldev_ptr, int *jerr, double *a, int *iy, int *mm, int nino, int warm) {
     int no = X->get_no();
     int ni = X->get_ni();
     double aint = 0;  // intercept
@@ -29,25 +29,20 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     double *z = (double *)malloc(sizeof(double) * no);
     double *eta = (double *)malloc(sizeof(double) * no);
 
-    double *a = (double *)malloc(sizeof(double) * ni);
     double *g = (double *)malloc(sizeof(double) * ni);
     double *xv = (double *)malloc(sizeof(double) * ni);
-    int *iy = (int *)malloc(sizeof(int) * ni);
-    int *mm = (int *)malloc(sizeof(int) * ni);
 
-    for (int i = 0; i < ni; ++i) {
-        iy[i] = 0;
-        mm[i] = 0;
-        a[i] = 0.0;
-    }
 
-    int iz = 0;
-    int nino = 0;
+    int iz = warm;
     double rsqc = 0;
 
     double nulldev =
         fam->null_deviance(y, v, r, intr, eta, has_offset, offset, &aint, no);
     *nulldev_ptr = nulldev;
+
+    if(warm) {
+        X->compute_eta(eta, a, aint, has_offset, offset);
+    }
 
 
     // Compute max_lambda here instead of using user defined lambdas
@@ -122,14 +117,11 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
 
 
     free(r);
-    free(a);
     free(g);
     free(w);
     free(z);
     free(eta);
     free(xv);
-    free(iy);
-    free(mm);
     free(lambdas);
 
     return;

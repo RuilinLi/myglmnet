@@ -27,7 +27,7 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     alpha = 1, nlambda = 100, lambda.min.ratio = ifelse(nobs < nvars, 0.01, 1e-04), 
     lambda = NULL, standardize = TRUE, intercept = TRUE, thresh = 1e-07, dfmax = nvars + 
         1, pmax = min(dfmax * 2 + 20, nvars), exclude = NULL, penalty.factor = rep(1, 
-        nvars), lower.limits = -Inf, upper.limits = Inf, maxit = 1e+05) {
+        nvars), lower.limits = -Inf, upper.limits = Inf, maxit = 1e+05, beta0=NULL) {
     
     this.call <- match.call()
     ### Need to do this first so defaults in call can be satisfied
@@ -177,10 +177,36 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     } else {
         x_list = list("Dense", np[1], np[2], x)
     }
+
+    # warm start support
+    iy = integer(np[2])
+    mm = integer(np[2])
+    nino = 0L
+    warm=0L # warm start flag
+    if(!is.null(beta0)){
+        if(length(beta0) != np[2]) {
+            stop("warm start dimension does not match matrix dimenstion")
+        }
+        if(is.null(lambda)) {
+            stop("warm start must be given regularization parameters")
+        }
+        nnz_ind = which(beta0 != 0)
+        nino = length(nnz_ind)
+        if(nino > nx) {
+            stop("Already have too many variables in the model")
+        }
+        iy[nnz_ind] = 1L
+        mm[nnz_ind] = 1:nino
+        ia[1:nino] = nnz_ind - 1L # 0 based index
+        beta0 = as.double(beta0)
+        warm = 1L
+    } else {
+        beta0 = double(np[2])
+    }
     
     .Call("solve", alpha_mod, x_list, y, weights, ju, vp, cl, nx, nlam, flmin, ulam, thresh, 
         isd, intr, maxit, lmu, a0, ca, ia, nin, devratio, alm, nlp, family, offset, 
-        has_offset, mxitnr, nulldev, jerr)
+        has_offset, mxitnr, nulldev, jerr, beta0, iy, mm, nino, warm)
     
     # if (trace.it) { if (relax) cat('Training Fit\n') pb <- createPB(min = 0, max =
     # nlam, initial = 0, style = 3) }
