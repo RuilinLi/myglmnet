@@ -4,10 +4,10 @@
 class GlmFamily {
    public:
     // Compute the z and w in a IRLS, z here is actually a weighted working
-    // residual
+    // residual, also compute sum of z and w
     virtual void get_workingset(const double *eta, const double *y,
                                 const double *v, double *w, double *z,
-                                int len) = 0;
+                                int len, double* sumbuf) = 0;
     virtual double get_deviance(const double *y, const double *eta,
                                 const double *v, int len) = 0;
 
@@ -32,7 +32,7 @@ class Gaussian : public GlmFamily {
 
     // Do nothing
     void get_workingset(const double *eta, const double *y, const double *v,
-                        double *w, double *z, int len);
+                        double *w, double *z, int len, double* sumbuf);
 
     double get_deviance(const double *y, const double *eta, const double *v,
                         int len);
@@ -49,7 +49,7 @@ class Logistic : public GlmFamily {
    public:
     Logistic();
     void get_workingset(const double *eta, const double *y, const double *v,
-                        double *w, double *z, int len);
+                        double *w, double *z, int len, double* sumbuf);
 
     double get_deviance(const double *y, const double *eta, const double *v,
                         int len);

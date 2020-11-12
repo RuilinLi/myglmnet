@@ -51,8 +51,6 @@ static inline void ZeroTrailingNyps(uintptr_t nyp_ct, uintptr_t* bitarr) {
 void GetWeightsByValueNoDosage(const double* weights, const uintptr_t* genoarr,
                                uint32_t sample_ct, double* buf) {
     const uint32_t word_ct = DivUp(sample_ct, kBitsPerWordD2);
-    const uint32_t trailingNyps_keep = sample_ct - kBitsPerWordD2 * (word_ct - 1);
-    double result0 = 0.0;
     double result = 0.0;
     double result2 = 0.0;
     double miss_weight = 0.0;
@@ -67,38 +65,20 @@ void GetWeightsByValueNoDosage(const double* weights, const uintptr_t* genoarr,
         double result_local = 0.0;
         double result2_local = 0.0;
         double miss_weight_local = 0.0;
-        double result0_local = 0.0;
         if (end > word_ct)
         {
             end = word_ct;
         }
-        for (uint32_t widx = start; widx <end; ++widx)
+        for (uint32_t widx = start; widx < end; ++widx)
         {
             const uintptr_t geno_word = genoarr[widx];
-
-            const double *cur_weights = &(weights[widx * kBitsPerWordD2]);
-            if ((!geno_word) && (widx < word_ct - 1))
-            {
-                for (int i = 0; i < kBitsPerWordD2; ++i)
-                {
-                    result0_local += cur_weights[i];
-                }
+            if (!geno_word){
                 continue;
             }
+            const double *cur_weights = &(weights[widx * kBitsPerWordD2]);
             uintptr_t geno_word1 = geno_word & kMask5555;
             uintptr_t geno_word2 = (geno_word >> 1) & kMask5555;
-            uintptr_t geno_word0 = (~geno_word1) & (~geno_word2) & kMask5555;
-            if (widx == (word_ct - 1))
-            {
-                ZeroTrailingNyps(trailingNyps_keep, &geno_word0);
-            }
             uintptr_t geno_missing_word = geno_word1 & geno_word2;
-            while (geno_word0)
-            {
-                const uint32_t sample_idx_lowbits = ctzw(geno_word0) / 2;
-                result0_local += cur_weights[sample_idx_lowbits];
-                geno_word0 &= geno_word0 - 1;
-            }
             geno_word1 ^= geno_missing_word;
             while (geno_word1)
             {
@@ -125,14 +105,12 @@ void GetWeightsByValueNoDosage(const double* weights, const uintptr_t* genoarr,
             result += result_local;
             result2 += result2_local;
             miss_weight += miss_weight_local;
-            result0 += result0_local;
         }
     }
 
     buf[0] = result;
     buf[1] = result2;
     buf[2] = miss_weight;
-    buf[3] = result0;
 }
 
 PlinkMatrix::PlinkMatrix(int no, int ni, const uintptr_t* x,
@@ -151,33 +129,34 @@ PlinkMatrix::~PlinkMatrix()
     xim = nullptr;
 }
 
-double PlinkMatrix::dot_product(int j, const double *v)
+double PlinkMatrix::dot_product(int j, const double *v, double vsum)
 {
     // assert((j > 0) && (j < ni));
 
-    double buf[4];
+    double buf[3];
     GetWeightsByValueNoDosage(v, &(data[j * word_ct]), no, buf);
     double result = buf[0] + 2 * buf[1] + buf[2] * xim[j];
     if(center) {
-        result -= xim[j] *(buf[0] + buf[1] + buf[2] + buf[3]);
+        result -= xim[j] * vsum;
     }
     return result;
 }
 
-double PlinkMatrix::vx2(int j, const double* v) {
-    double buf[4];
+double PlinkMatrix::vx2(int j, const double* v, double vsum, double *xm) {
+    double buf[3];
     GetWeightsByValueNoDosage(v, &(data[j * word_ct]), no, buf);
     double result = buf[0] + 4 * buf[1] + buf[2] * xim[j] * xim[j];
     if(center) {
         double l1 = (buf[0] + 2 * buf[1] + buf[2] * xim[j]) * 2 * xim[j];
-        double l2 = xim[j] * xim[j] *(buf[0] + buf[1] + buf[2] + buf[3]);
-        result += (l2 - l1);    
+        double l2 = xim[j] * xim[j] *vsum;
+        result += (l2 - l1);
+        (*xm) = buf[0] + 2 * buf[1] + buf[2] * xim[j];
     }
     return result;
 }
 
 void PlinkMatrix::update_res(int j, double d, const double *weights,
-                             double *r)
+                             double *r, double *rsum, double vsum, double vx)
 {
     const uintptr_t *genoarr = &(data[j * word_ct]);
 
@@ -219,6 +198,7 @@ void PlinkMatrix::update_res(int j, double d, const double *weights,
     }
     if(center) {
         MatrixGlmnet::update_res_eigen(r, weights, d*xim[j], no);
+        (*rsum) += d * (vsum * xim[j] - vx);
     }
     return;
 }

@@ -11,7 +11,7 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
               double thr, int maxit, double *__restrict a, double *aint,
               double *__restrict g, int *__restrict ia, int *__restrict iy,
               int *iz, int *__restrict mm, int *nino, double *rsqc, int *nlp,
-              double *__restrict xv, int *jerr, int irls_iter);
+              double *__restrict xv, double * xm,int *jerr, int irls_iter, double rsum, double vsum);
 
 void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
                 int intr, const int *ju, const double *vp, const double *cl,
@@ -24,7 +24,6 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     int ni = X->get_ni();
     double aint = 0;  // intercept
 
-    double *r = (double *)malloc(sizeof(double) * no);
     double *w = (double *)malloc(sizeof(double) * no);
     double *z = (double *)malloc(sizeof(double) * no);
     double *eta = (double *)malloc(sizeof(double) * no);
@@ -32,6 +31,9 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     double *a = (double *)malloc(sizeof(double) * ni);
     double *g = (double *)malloc(sizeof(double) * ni);
     double *xv = (double *)malloc(sizeof(double) * ni);
+    // xv stores sum(v * x * x), xm store sum(v * x)
+    double *xm = (double *)malloc(sizeof(double) * ni);
+
     int *iy = (int *)malloc(sizeof(int) * ni);
     int *mm = (int *)malloc(sizeof(int) * ni);
 
@@ -46,14 +48,16 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     double rsqc = 0;
 
     double nulldev =
-        fam->null_deviance(y, v, r, intr, eta, has_offset, offset, &aint, no);
+        fam->null_deviance(y, v, w, intr, eta, has_offset, offset, &aint, no);
     *nulldev_ptr = nulldev;
 
 
     // Compute max_lambda here instead of using user defined lambdas
     double *lambdas = (double *)malloc(sizeof(double) * nlambda);
     if (flmin < 1.0) {
-        double max_lambda = X->max_grad(r, ju, vp);
+        // Note that, for plink matrix the mean is not removed when computing max_lambda
+        // this is find since the residual is orthogonal to all-ones vector
+        double max_lambda = X->max_grad(w, ju, vp);
         max_lambda /= fmax(alpha, 1e-3);
         lambdas = (double *)malloc(sizeof(double) * nlambda);
         lambdas[0] = max_lambda;
@@ -75,11 +79,14 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
 
         // IRLS, z here is actually the weighted working response
         for (int j = 0; j < mxitnr; ++j) {
-            fam->get_workingset(eta, y, v, w, z, no);
+            double sumbuf[2];
+            fam->get_workingset(eta, y, v, w, z, no, sumbuf);
+            double rsum = sumbuf[0];
+            double vsum = sumbuf[1];
 
             wls_base(alm0, almc, alpha, m, no, ni, X, z, w, intr, ju, vp, cl,
                      nx, thr, maxit, a, &aint, g, ia, iy, &iz, mm, &nino, &rsqc,
-                     nlp, xv, jerr, j);
+                     nlp, xv, xm, jerr, j, rsum, vsum);
 
             assert((*jerr) == 0);
 
@@ -120,8 +127,7 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
     }
 
 
-
-    free(r);
+    free(xm);
     free(a);
     free(g);
     free(w);

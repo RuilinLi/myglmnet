@@ -53,7 +53,7 @@ DenseM::DenseM(int no, int ni, const double *x) {
 }
 DenseM::~DenseM() { data = nullptr; }
 
-double DenseM::dot_product(int j, const double *v) {
+double DenseM::dot_product(int j, const double *v, double vsum) {
     // return std::inner_product(data + j * no, data + (j + 1) * no, v, 0.0);
 
     // double result = 0.0;
@@ -67,7 +67,7 @@ double DenseM::dot_product(int j, const double *v) {
     return x.dot(y);
 }
 
-double DenseM::vx2(int j, const double *v) {
+double DenseM::vx2(int j, const double *v, double vsum, double *xm) {
     // double result = 0.0;
     // for (int i = 0; i < no; ++i) {
     //     result += data[j * no + i] * data[j * no + i] * v[i];
@@ -78,9 +78,10 @@ double DenseM::vx2(int j, const double *v) {
 }
 
 void DenseM::update_res(int j, double d, const double *v,
-                        double *__restrict r) {
+                        double *__restrict r, double *rsum, double vsum, double vx) {
     for (int i = 0; i < no; ++i) {
         r[i] -= d * v[i] * data[j * no + i];
+        (*rsum) -= d * v[i] * data[j * no + i];
     }
 }
 

@@ -8,10 +8,14 @@ Gaussian::Gaussian() {}
 
 // Copy these vectors, though maybe only need to do it once?
 void Gaussian::get_workingset(const double *eta, const double *y,
-                              const double *v, double *w, double *z, int len) {
+                              const double *v, double *w, double *z, int len, double* sumbuf) {
+    sumbuf[0] = 0;
+    sumbuf[1] = 0;
     for (int i = 0; i < len; ++i) {
         w[i] = v[i];
         z[i] = v[i] * (y[i] - eta[i]);
+        sumbuf[0] += z[i];
+        sumbuf[1] += w[i];
     }
 }
 
@@ -87,11 +91,15 @@ double Gaussian::null_deviance(const double *y, const double *v, double *r,
 
 Logistic::Logistic() {}
 void Logistic::get_workingset(const double *eta, const double *y,
-                              const double *v, double *w, double *z, int len) {
+                              const double *v, double *w, double *z, int len, double* sumbuf) {
+    sumbuf[0] = 0;
+    sumbuf[1] = 0;
     for (int i = 0; i < len; ++i) {
         double p = 1 / (1 + exp(-eta[i]));
         w[i] = p * (1 - p) * v[i];
         z[i] = (y[i] - p) * v[i];
+        sumbuf[0] += z[i];
+        sumbuf[1] += w[i];
     }
 }
 
