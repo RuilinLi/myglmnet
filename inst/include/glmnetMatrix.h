@@ -59,7 +59,7 @@ class DenseM : public MatrixGlmnet {
 
 class PlinkMatrix : public MatrixGlmnet {
    public:
-    PlinkMatrix(int no, int ni, const uintptr_t* x, const double* xim, int intr);
+    PlinkMatrix(int no, int ni, const uintptr_t* x, const double* xim, int intr, int ncov, const double *cov = nullptr);
     ~PlinkMatrix();
 
     double dot_product(int j, const double* v,double vsum=0);
@@ -76,6 +76,8 @@ class PlinkMatrix : public MatrixGlmnet {
      uint32_t word_ct;
      const double *xim; // mean imputation
      bool center;
+     int ncov; // number of covariates
+     const double *cov;
 };
 
 #endif
