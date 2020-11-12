@@ -1,5 +1,4 @@
 #include <math.h>
-
 #include "glmnetMatrix.h"
 void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
               MatrixGlmnet *X, double *__restrict r, const double *v, int intr,
@@ -7,9 +6,13 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
               double thr, int maxit, double *__restrict a, double *aint,
               double *__restrict g, int *__restrict ia, int *__restrict iy,
               int *iz, int *__restrict mm, int *nino, double *rsqc, int *nlp,
-              double *__restrict xv, int *jerr, int irls_iter) {
+              double *__restrict xv, double * xm,int *jerr, int irls_iter, double rsum, double vsum) {
     // double *__restrict xv = (double *)malloc(sizeof(double) * ni);
-    double xmz = MatrixGlmnet::sumv(v, no);
+    const double xmz = vsum;
+    if(!intr) {
+        vsum = 0;
+        rsum = 0;
+    }
     double ab = almc * alpha;
     double dem = almc * (1.0 - alpha);
     double tlam = alpha * (2.0 * almc - alm0);
@@ -20,14 +23,14 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
         }
 
         if ((irls_iter == 0) && (iy[j] == 0)) {
-            g[j] = fabs(X->dot_product(j, r));
+            g[j] = fabs(X->dot_product(j, r, rsum));
             if(g[j] > tlam * vp[j]) {
                 iy[j] = 1;
             }
         } 
 
         if(iy[j]) {
-            xv[j] = X->vx2(j, v);
+            xv[j] = X->vx2(j, v, vsum, (xm+j));
         }
     }
 
@@ -42,7 +45,7 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
                     continue;
                 }
 
-                double gj = X->dot_product(j, r);
+                double gj = X->dot_product(j, r, rsum);
                 double aj = a[j];
                 double u = gj + aj * xv[j];
                 double au = fabs(u) - vp[j] * ab;
@@ -68,22 +71,22 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
                 }
                 double d = a[j] - aj;
                 (*rsqc) += d * (2.0 * gj - d * xv[j]);
-                X->update_res(j, d, v, r);
+                X->update_res(j, d, v, r, &rsum, vsum, xm[j]);
                 dlx = fmax(xv[j] * d * d, dlx);
             }
             if ((*nino) > nx) {
                 break;
             }
             if (intr) {
-                double sumr = MatrixGlmnet::sumv(r, no);
-                double d = sumr / xmz;
+                double d = rsum / xmz;
                 (*aint) += d;
-                (*rsqc) += d * (2.0 * sumr - d * xmz);
+                (*rsqc) += d * (2.0 * rsum - d * xmz);
 
                 dlx = fmax(dlx, xmz * d * d);
 
                 for (int i = 0; i < no; ++i) {
                     r[i] -= d * v[i];
+                    rsum -= d * v[i];
                 }
             }
 
@@ -94,10 +97,10 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
                     if (iy[j] || (!ju[j])) {
                         continue;
                     }
-                    g[j] = fabs(X->dot_product(j, r));
+                    g[j] = fabs(X->dot_product(j, r, rsum));
                     if (g[j] > ab * vp[j]) {
                         iy[j] = 1;
-                        xv[j] = X->vx2(j, v);
+                        xv[j] = X->vx2(j, v, vsum, xm+j);
                         ixx = true;
                     }
                 }
@@ -120,7 +123,7 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
             double dlx = 0.0;
             for (int l = 0; l < (*nino); ++l) {
                 int k = ia[l];
-                double gk = X->dot_product(k, r);
+                double gk = X->dot_product(k, r, rsum);
                 double ak = a[k];
                 double u = gk + ak * xv[k];
                 double au = fabs(u) - vp[k] * ab;
@@ -137,21 +140,22 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
                 }
                 double d = a[k] - ak;
                 (*rsqc) += d * (2.0 * gk - d * xv[k]);
-                X->update_res(k, d, v, r);
+                X->update_res(k, d, v, r, &rsum, vsum, xm[k]);
+                
                 dlx = fmax(xv[k] * d * d, dlx);
             }
 
             if (intr) {
-                double sumr = MatrixGlmnet::sumv(r, no);
-                double d = sumr / xmz;
+                double d = rsum / xmz;
                 (*aint) += d;
-                (*rsqc) += d * (2.0 * sumr - d * xmz);
+                (*rsqc) += d * (2.0 * rsum - d * xmz);
 
                 dlx = fmax(dlx, xmz * d * d);
-
                 for (int i = 0; i < no; ++i) {
                     r[i] -= d * v[i];
+                    rsum -= d * v[i];
                 }
+
             }
 
             if (dlx < thr) {

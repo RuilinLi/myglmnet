@@ -5,17 +5,19 @@
 class MatrixGlmnet {
    public:
     // Compute the inner product of X[,j] and v
-    virtual double dot_product(int j, const double* v) = 0;
+    virtual double dot_product(int j, const double* v, double vsum=0) = 0;
 
     // Compute the inner product of X[,j]^2 and v
-    virtual double vx2(int j, const double* v) = 0;
+    // A bit bulky here, also compute X[, j] * v and store to xm
+    virtual double vx2(int j, const double* v, double vsum=0, double *xm=nullptr) = 0;
 
     // Set r = r - d*v*x[,j]
-    virtual void update_res(int j, double d, const double* v, double* r) = 0;
+    virtual void update_res(int j, double d, const double* v, double* r, double *rsum=nullptr, double vsum=0, double vx=0) = 0;
 
     // Set eta = X * a + aint + offset, offset is optional
     virtual void compute_eta(double* eta, const double* a, double aint,
                              bool has_offset, const double* offset) = 0;
+    
 
     // Compute weighted mean and standard deviation of each variable,
     // ignore variables with ju[j] == 0
@@ -42,11 +44,11 @@ class DenseM : public MatrixGlmnet {
     DenseM(int no, int ni, const double* x);
     ~DenseM();
 
-    double dot_product(int j, const double* v);
+    double dot_product(int j, const double* v,double vsum=0);
 
-    double vx2(int j, const double* v);
+    double vx2(int j, const double* v,double vsum=0, double *xm=nullptr);
 
-    void update_res(int j, double d, const double* v, double* r);
+    void update_res(int j, double d, const double* v, double* r, double *rsum=nullptr, double vsum=0, double vx=0);
 
     void compute_eta(double* eta, const double* a, double aint, bool has_offset,
                      const double* offset);
@@ -60,11 +62,11 @@ class PlinkMatrix : public MatrixGlmnet {
     PlinkMatrix(int no, int ni, const uintptr_t* x, const double* xim, int intr);
     ~PlinkMatrix();
 
-    double dot_product(int j, const double* v);
+    double dot_product(int j, const double* v,double vsum=0);
 
-    double vx2(int j, const double* v);
+    double vx2(int j, const double* v,double vsum=0, double *xm=nullptr);
 
-    void update_res(int j, double d, const double* v, double* r);
+    void update_res(int j, double d, const double* v, double* r, double *rsum=nullptr, double vsum=0, double vx=0);
 
     void compute_eta(double* eta, const double* a, double aint, bool has_offset,
                      const double* offset);
