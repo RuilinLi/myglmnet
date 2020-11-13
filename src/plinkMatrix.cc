@@ -46,6 +46,7 @@ static inline void ZeroTrailingNyps(uintptr_t nyp_ct, uintptr_t* bitarr) {
   ZeroTrailingBits(nyp_ct * 2, bitarr);
 }
 
+void eigen_get_eta(double *eta, const double *cov, const double *weights, int no, int ncov);
 
 
 void GetWeightsByValueNoDosage(const double* weights, const uintptr_t* genoarr,
@@ -184,7 +185,19 @@ void PlinkMatrix::update_res(int j, double d, const double *weights,
         const uintptr_t *genoarr = &(data[(j-ncov) * word_ct]);
 
         const uint32_t word_ct_local = DivUp(no, kBitsPerWordD2);
-        for (uint32_t widx = 0; widx != word_ct_local; ++widx)
+#pragma omp parallel
+    {
+        int total_threads = omp_get_num_threads();
+        int threadid = omp_get_thread_num();
+        int size = (word_ct_local + total_threads * 8 - 1) / (total_threads * 8);
+        size *= 8;
+        uint32_t start = threadid * size;
+        uint32_t end = (1 + threadid) * size;
+        if (end > word_ct_local)
+        {
+            end = word_ct_local;
+        }
+        for (uint32_t widx = start; widx < end; ++widx)
         {
             const uintptr_t geno_word = genoarr[widx];
             if (!geno_word)
@@ -219,6 +232,7 @@ void PlinkMatrix::update_res(int j, double d, const double *weights,
                 geno_missing_word &= geno_missing_word - 1;
             }
         }
+    }
         if(center) {
             MatrixGlmnet::update_res_eigen(r, weights, d*xim[j], no);
             (*rsum) += d * (vsum * xim[j] - vx);
@@ -315,11 +329,12 @@ void PlinkMatrix::compute_eta(double *eta, const double *weights, double aint,
     // for now that ncov is small
     // Also this is not a performance critical region
     if(ncov > 0) {
-        for(int i = 0; i < no; ++i){
-            for(int j = 0; j < ncov; ++j) {
-                eta[i] += cov[j*no + i] * weights[j];
-            }
-        }
+        // for(int i = 0; i < no; ++i){
+        //     for(int j = 0; j < ncov; ++j) {
+        //         eta[i] += cov[j*no + i] * weights[j];
+        //     }
+        // }
+        eigen_get_eta(eta, cov, weights, no, ncov);
     }
 
 }

@@ -110,3 +110,12 @@ void DenseM::compute_eta(double *__restrict eta, const double *a, double aint,
         // }
     }
 }
+
+void eigen_get_eta(double *eta, const double *cov, const double *weights, int no, int ncov)
+{
+    Eigen::Map<Eigen::VectorXd> eta_map(eta, no);
+    Eigen::Map<const Eigen::MatrixXd> X(cov, no, ncov);
+    Eigen::Map<const Eigen::VectorXd> y(weights, ncov);
+    eta_map += X * y;
+    return;
+}
