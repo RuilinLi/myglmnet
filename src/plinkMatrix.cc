@@ -243,41 +243,54 @@ void PlinkMatrix::compute_eta(double *eta, const double *weights, double aint,
 
     // This is only useful for small no, maybe I should just not use it at all?
     const uint32_t word_ct_local = DivUp(no, kBitsPerWordD2);
-    for (int j = ncov; j < ni; ++j)
+#pragma omp parallel
     {
-        const uintptr_t *genoarr = &(data[(j-ncov) * word_ct]);
-        double ximpute = xim[j];
-        double wj = weights[j];
-
-        for (uint32_t widx = 0; widx != word_ct_local; ++widx)
+        int total_threads = omp_get_num_threads();
+        int threadid = omp_get_thread_num();
+        int size = (word_ct_local + total_threads * 8 - 1) / (total_threads * 8);
+        size *= 8;
+        uint32_t start = threadid * size;
+        uint32_t end = (1 + threadid) * size;
+        if (end > word_ct_local)
         {
-            const uintptr_t geno_word = genoarr[widx];
-            if (!geno_word)
+            end = word_ct_local;
+        }
+        for (int j = ncov; j < ni; ++j)
+        {
+            const uintptr_t *genoarr = &(data[(j-ncov) * word_ct]);
+            double ximpute = xim[j];
+            double wj = weights[j];
+
+            for (uint32_t widx = start; widx < end; ++widx)
             {
-                continue;
-            }
-            uintptr_t geno_word1 = geno_word & kMask5555;
-            uintptr_t geno_word2 = (geno_word >> 1) & kMask5555;
-            uintptr_t geno_missing_word = geno_word1 & geno_word2;
-            geno_word1 ^= geno_missing_word;
-            while (geno_word1)
-            {
-                const uint32_t sample_idx_lowbits = ctzw(geno_word1) / 2;
-                eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += wj;
-                geno_word1 &= geno_word1 - 1;
-            }
-            geno_word2 ^= geno_missing_word;
-            while (geno_word2)
-            {
-                const uint32_t sample_idx_lowbits = ctzw(geno_word2) / 2;
-                eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += 2 * wj;
-                geno_word2 &= geno_word2 - 1;
-            }
-            while (geno_missing_word)
-            {
-                const uint32_t sample_idx_lowbits = ctzw(geno_missing_word) / 2;
-                eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += ximpute * wj;
-                geno_missing_word &= geno_missing_word - 1;
+                const uintptr_t geno_word = genoarr[widx];
+                if (!geno_word)
+                {
+                    continue;
+                }
+                uintptr_t geno_word1 = geno_word & kMask5555;
+                uintptr_t geno_word2 = (geno_word >> 1) & kMask5555;
+                uintptr_t geno_missing_word = geno_word1 & geno_word2;
+                geno_word1 ^= geno_missing_word;
+                while (geno_word1)
+                {
+                    const uint32_t sample_idx_lowbits = ctzw(geno_word1) / 2;
+                    eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += wj;
+                    geno_word1 &= geno_word1 - 1;
+                }
+                geno_word2 ^= geno_missing_word;
+                while (geno_word2)
+                {
+                    const uint32_t sample_idx_lowbits = ctzw(geno_word2) / 2;
+                    eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += 2 * wj;
+                    geno_word2 &= geno_word2 - 1;
+                }
+                while (geno_missing_word)
+                {
+                    const uint32_t sample_idx_lowbits = ctzw(geno_missing_word) / 2;
+                    eta[widx * kBitsPerWordD2 + sample_idx_lowbits] += ximpute * wj;
+                    geno_missing_word &= geno_missing_word - 1;
+                }
             }
         }
     }
