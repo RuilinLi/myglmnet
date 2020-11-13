@@ -19,7 +19,7 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
                 double *offset, const double *ulambdas, int nlambda, int mxitnr,
                 const double flmin, int *lmu, double *a0, double *ca, int *ia,
                 int *nin, double *devratio_vec, double *alm, int *nlp,
-                double *nulldev_ptr, int *jerr, double *a, int *iy, int *mm, int nino, int warm) {
+                double *nulldev_ptr, int *jerr, double *a, int *iy, int *mm, int nino, int warm, double *residuals) {
     int no = X->get_no();
     int ni = X->get_ni();
     double aint = 0;  // intercept
@@ -102,6 +102,7 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
         for (int k = 0; k < nino; ++k) {
             ca[m * nx + k] = a[ia[k]];
         }
+        fam->get_residual(y, eta, v, residuals+m*no, no);
 
         a0[m] = aint;
         nin[m] = nino;

@@ -11,7 +11,7 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
                 double *offset, const double *lambdas, int nlambda, int mxitnr,
                 const double flmin, int *lmu, double *a0, double *ca, int *ia,
                 int *nin, double *devratio_vec, double *alm, int *nlp,
-                double *nulldev, int *jerr, double *a, int *iy, int *mm, int nino, int warm);
+                double *nulldev, int *jerr, double *a, int *iy, int *mm, int nino, int warm, double *residuals);
 
 GlmFamily *get_family(const char *family) {
     if (strcmp(family, "gaussian") == 0) {
@@ -126,7 +126,7 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
            SEXP a02, SEXP ca2, SEXP ia2, SEXP nin2, SEXP devratio2, SEXP alm2,
            SEXP nlp2, SEXP family2, SEXP offset2, SEXP has_offset2,
            SEXP mxitnr2, SEXP nulldev2, SEXP jerr2, SEXP beta02, SEXP iy2,
-           SEXP mm2, SEXP nino2, SEXP warm2) {
+           SEXP mm2, SEXP nino2, SEXP warm2, SEXP residuals2) {
     // Create matrix object
     // ProfilerStart("/home/ruilinli/myglmnet/inst/prof.out");
     const char *mattype = CHAR(STRING_ELT(VECTOR_ELT(x2, 0), 0));
@@ -195,6 +195,7 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
     int *nlp = INTEGER(nlp2);
     int *jerr = INTEGER(jerr2);
     double *nulldev = REAL(nulldev2);
+    double *residuals = REAL(residuals2);
 
     double *beta0 = REAL(PROTECT(duplicate(beta02)));
     int *iy = INTEGER(iy2);
@@ -210,7 +211,7 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
 
     glmnetPath(alpha, X, y, v, intr, ju, vp, cl, nx, thr, maxit, fam,
                has_offset, offset, lambdas, nlambda, mxitnr, flmin, lmu, a0, ca,
-               ia, nin, devratio, alm, nlp, nulldev, jerr, beta0, iy, mm, nino, warm);
+               ia, nin, devratio, alm, nlp, nulldev, jerr, beta0, iy, mm, nino, warm, residuals);
 
     // scale parameters back if standardization happend
     if (isd && (strcmp(mattype, "Plink") != 0)) {

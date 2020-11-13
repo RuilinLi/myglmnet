@@ -156,6 +156,9 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     nlp <- integer(1)
     jerr <- integer(1)
     nulldev <- double(1)
+    # compute weighted residuals for each lambda
+    # save it in this matrix
+    residuals <- double(nlam * nobs)
     
     if (is.null(offset)) {
         offset <- double(0)
@@ -227,7 +230,7 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     
     .Call("solve", alpha_mod, x_list, y, weights, ju, vp, cl, nx, nlam, flmin, ulam, thresh, 
         isd, intr, maxit, lmu, a0, ca, ia, nin, devratio, alm, nlp, family, offset, 
-        has_offset, mxitnr, nulldev, jerr, beta0, iy, mm, nino, warm)
+        has_offset, mxitnr, nulldev, jerr, beta0, iy, mm, nino, warm, residuals)
     
     # if (trace.it) { if (relax) cat('Training Fit\n') pb <- createPB(min = 0, max =
     # nlam, initial = 0, style = 3) }
@@ -237,6 +240,7 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
         ca <- ca * sdy
         a0 <- a0 * sdy
         alm <- alm/(1 - alpha + alpha/sdy)
+        residuals <- residuals * sdy
     }
     fit <- list(jerr = jerr, a0 = a0, nin = nin, lmu = lmu, alm = alm, ca = ca, ia = ia)
     outlist <- getcoef(fit, nvars, nx, vnames)
@@ -255,6 +259,9 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
         }
     }
     
+    residuals <- residuals[seq(lmu*no)]
+    residuals <- matrix(residuals, nrow = no, ncol = lmu)
+    outlist$residuals <- residuals
     outlist$call <- this.call
     outlist$nobs <- nobs
     class(outlist) <- c(class(outlist), "glmnet")

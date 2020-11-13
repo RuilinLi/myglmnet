@@ -117,7 +117,7 @@ void Logistic::get_residual(const double *y, const double *eta, const double *v,
                             double *r, int len) {
     for (int i = 0; i < len; ++i) {
         double eeta = exp(eta[i]);
-        r[i] = y[i] - eeta / (1 + eeta);
+        r[i] = v[i] * (y[i] - eeta / (1 + eeta));
     }
 }
 
