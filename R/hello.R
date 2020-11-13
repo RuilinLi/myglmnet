@@ -58,7 +58,11 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     if (nrowy != nobs) 
         stop(paste("number of observations in y (", nrowy, ") not equal to the number of rows of x (", 
             nobs, ")", sep = ""))
-    vnames <- colnames(x)
+    if(inherits(x, "PlinkMatrix")){
+        vnames <- x@colname
+    } else{
+        vnames <- colnames(x)
+    }
     if (is.null(vnames)) 
         vnames <- paste("V", seq(nvars), sep = "")
     ne <- as.integer(dfmax)
@@ -243,7 +247,7 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     if(inherits(x, "PlinkMatrix") && x@ncov > 0) {
         beta_tmp = outlist$beta[1:x@ncov, , drop=F]
         if(standardize){
-            beta_tmp = Diagonal(x@ncov,1/covsd) %*% beta_tmp
+            beta_tmp = Matrix::Diagonal(x@ncov,1/covsd) %*% beta_tmp
             outlist$beta[1:x@ncov, ] = beta_tmp
         }
         if(intercept){
