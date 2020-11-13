@@ -86,7 +86,7 @@ void standardize(double *x, const int *ju, double *xm, double *xs, int intr,
 
 MatrixGlmnet *get_matrix(SEXP xptr, const char *mattype, int no, int ni,
                          int isd, int intr, int *ju, double *xm, double *xs,
-                         const double *v, const double *xim) {
+                         const double *v, const double *xim, int ncov, const double *cov) {
     if (strcmp(mattype, "Dense") == 0) {
         double *x = REAL(xptr);
         get_xmxs_dense(x, v, ju, xm, xs, no, ni);
@@ -97,7 +97,7 @@ MatrixGlmnet *get_matrix(SEXP xptr, const char *mattype, int no, int ni,
 
     if (strcmp(mattype, "Plink") == 0) {
         uintptr_t *x = (uintptr_t *)R_ExternalPtrAddr(xptr);
-        MatrixGlmnet *result = new PlinkMatrix(no, ni, x, xim, intr);
+        MatrixGlmnet *result = new PlinkMatrix(no, ni, x, xim, intr, ncov, cov);
         return result;
     }
 
@@ -111,7 +111,7 @@ extern "C" {
 SEXP testplink(SEXP x2, SEXP no2, SEXP ni2, SEXP xim2, SEXP v2, SEXP eta2) {
     uintptr_t *xptr = (uintptr_t *)R_ExternalPtrAddr(x2);
     MatrixGlmnet *x =
-        new PlinkMatrix(asInteger(no2), asInteger(ni2), xptr, REAL(xim2), 0);
+        new PlinkMatrix(asInteger(no2), asInteger(ni2), xptr, REAL(xim2), 0, 0, nullptr);
     double *eta = REAL(eta2);
     double *v = REAL(v2);
     x->compute_eta(eta, v, 0.0,
@@ -128,15 +128,24 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
            SEXP mxitnr2, SEXP nulldev2, SEXP jerr2, SEXP beta02, SEXP iy2,
            SEXP mm2, SEXP nino2, SEXP warm2) {
     // Create matrix object
-    // ProfilerStart("/home/ruilinli/snpnettest/myglmnet/inst/prof.out");
+    // ProfilerStart("/home/ruilinli/myglmnet/inst/prof.out");
     const char *mattype = CHAR(STRING_ELT(VECTOR_ELT(x2, 0), 0));
     int no = asInteger(VECTOR_ELT(x2, 1));
     int ni = asInteger(VECTOR_ELT(x2, 2));
     SEXP xptr = VECTOR_ELT(x2, 3);
+
     double *xim = nullptr;  // only for plink matrix
+    double *cov = nullptr; // only for plink matrix
+    int ncov = 0;
     if (strcmp(mattype, "Plink") == 0) {
         xim = REAL(VECTOR_ELT(x2, 4));
+        ncov = asInteger(VECTOR_ELT(x2, 5));
+        if(ncov > 0) {
+            cov = REAL(VECTOR_ELT(x2, 6));
+        }
     }
+
+
     int intr = asInteger(intr2);
     int isd = asInteger(isd2);
     int *ju = INTEGER(ju2);
@@ -152,7 +161,7 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
     double *xs = (double *)malloc(sizeof(double) * ni);
 
     MatrixGlmnet *X =
-        get_matrix(xptr, mattype, no, ni, isd, intr, ju, xm, xs, v, xim);
+        get_matrix(xptr, mattype, no, ni, isd, intr, ju, xm, xs, v, xim, ncov, cov);
 
     // Create family object
     GlmFamily *fam = get_family(CHAR(STRING_ELT(family2, 0)));
@@ -204,7 +213,7 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
                ia, nin, devratio, alm, nlp, nulldev, jerr, beta0, iy, mm, nino, warm);
 
     // scale parameters back if standardization happend
-    if (isd) {
+    if (isd && (strcmp(mattype, "Plink") != 0)) {
         for (int m = 0; m < (*lmu); ++m) {
             for (int k = 0; k < nin[m]; ++k) {
                 ca[m * nx + k] /= xs[ia[k]];

@@ -173,7 +173,24 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     mxitnr <- as.integer(mxitnr)
 
     if(inherits(x, "PlinkMatrix")){
-        x_list = list("Plink", np[1], np[2], x@ptr, x@xim)
+        if(x@ncov > 0){
+            covmat <- x@covs
+            if(intercept) {
+                # Maybe the mean and sd should be computed using the
+                # observation weights?
+                covmean <- apply(covmat, 2, mean)
+                covmat <- sweep(covmat, 2, covmean)
+            }
+            if(standardize) {
+                covsd <- apply(covmat, 2, sd)
+                covmat <- sweep(covmat, 2, covsd, "/")
+            }
+            meanvec = c(rep(0.0, x@ncov), x@xim)
+            x_list = list("Plink", np[1], np[2], x@ptr, meanvec, x@ncov, covmat)
+        } else {
+             x_list = list("Plink", np[1], np[2], x@ptr, x@xim, 0L)
+        }
+       
     } else {
         x_list = list("Dense", np[1], np[2], x)
     }
@@ -222,6 +239,17 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     dev <- devratio[seq(lmu)]
     outlist <- c(outlist, list(dev.ratio = dev, nulldev = nulldev, npasses = nlp, 
         jerr = jerr, offset = has_offset))
+
+    if(inherits(x, "PlinkMatrix") && x@ncov > 0) {
+        beta_tmp = outlist$beta[1:x@ncov, , drop=F]
+        if(standardize){
+            beta_tmp = Diagonal(x@ncov,1/covsd) %*% beta_tmp
+            outlist$beta[1:x@ncov, ] = beta_tmp
+        }
+        if(intercept){
+            outlist$a0 = outlist$a0 - Matrix::t(covmean %*% beta_tmp)
+        }
+    }
     
     outlist$call <- this.call
     outlist$nobs <- nobs
