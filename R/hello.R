@@ -192,8 +192,7 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
                 covsd <- apply(covmat, 2, sd)
                 covmat <- sweep(covmat, 2, covsd, "/")
             }
-            meanvec = c(rep(0.0, x@ncov), x@xim)
-            x_list = list("Plink", np[1], np[2], x@ptr, meanvec, x@ncov, covmat)
+            x_list = list("Plink", np[1], np[2], x@ptr, x@xim, x@ncov, covmat)
         } else {
              x_list = list("Plink", np[1], np[2], x@ptr, x@xim, 0L)
         }

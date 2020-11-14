@@ -141,9 +141,9 @@ double PlinkMatrix::dot_product(int j, const double *v, double vsum)
     if(j >= ncov){
         double buf[3];
         GetWeightsByValueNoDosage(v, &(data[(j-ncov) * word_ct]), no, buf);
-        double result = buf[0] + 2 * buf[1] + buf[2] * xim[j];
+        double result = buf[0] + 2 * buf[1] + buf[2] * xim[j - ncov];
         if(center) {
-            result -= xim[j] * vsum;
+            result -= xim[j - ncov] * vsum;
         }
         return result;
     }
@@ -159,12 +159,12 @@ double PlinkMatrix::vx2(int j, const double* v, double vsum, double *xm) {
     if(j >= ncov){
         double buf[3];
         GetWeightsByValueNoDosage(v, &(data[(j-ncov) * word_ct]), no, buf);
-        double result = buf[0] + 4 * buf[1] + buf[2] * xim[j] * xim[j];
+        double result = buf[0] + 4 * buf[1] + buf[2] * xim[j - ncov] * xim[j - ncov];
         if(center) {
-            double l1 = (buf[0] + 2 * buf[1] + buf[2] * xim[j]) * 2 * xim[j];
-            double l2 = xim[j] * xim[j] *vsum;
+            double l1 = (buf[0] + 2 * buf[1] + buf[2] * xim[j - ncov]) * 2 * xim[j - ncov];
+            double l2 = xim[j - ncov] * xim[j - ncov] *vsum;
             result += (l2 - l1);
-            (*xm) = buf[0] + 2 * buf[1] + buf[2] * xim[j];
+            (*xm) = buf[0] + 2 * buf[1] + buf[2] * xim[j - ncov];
         }
         return result;
     }
@@ -228,14 +228,14 @@ void PlinkMatrix::update_res(int j, double d, const double *weights,
             {
                 const uint32_t sample_idx_lowbits = ctzw(geno_missing_word) / 2;
                 r[widx * kBitsPerWordD2 + sample_idx_lowbits] -=
-                    xim[j] * d * cur_weights[sample_idx_lowbits];
+                    xim[j - ncov] * d * cur_weights[sample_idx_lowbits];
                 geno_missing_word &= geno_missing_word - 1;
             }
         }
     }
         if(center) {
-            MatrixGlmnet::update_res_eigen(r, weights, d*xim[j], no);
-            (*rsum) += d * (vsum * xim[j] - vx);
+            MatrixGlmnet::update_res_eigen(r, weights, d*xim[j - ncov], no);
+            (*rsum) += d * (vsum * xim[j - ncov] - vx);
         }
         return;
     }
@@ -270,7 +270,9 @@ void PlinkMatrix::multv(double *eta, const double *weights, double aint) {
         for (int j = ncov; j < ni; ++j)
         {
             const uintptr_t *genoarr = &(data[(j-ncov) * word_ct]);
-            double ximpute = xim[j];
+            // it's easy to forget that xim should be extended when
+            // we add covariates to it
+            double ximpute = xim[j - ncov];
             double wj = weights[j];
 
             for (uint32_t widx = start; widx < end; ++widx)
@@ -325,8 +327,8 @@ void PlinkMatrix::compute_eta(double *eta, const double *weights, double aint,
     }
     if(center){
         double inner = 0;
-        for(int j = 0; j < ni; ++j) {
-            inner += xim[j] * weights[j];
+        for(int j = ncov; j < ni; ++j) {
+            inner += xim[j - ncov] * weights[j];
         }
         for(int i = 0; i < no; ++i) {
             eta[i] -= inner;

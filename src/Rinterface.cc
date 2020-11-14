@@ -230,7 +230,9 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
             {
                 for (int k = 0; k < nin[m]; ++k)
                 {
-                    a0[m] -= ca[m * nx + k] * xim[ia[k]];
+                    if(ia[k] >= ncov){
+                        a0[m] -= ca[m * nx + k] * xim[ia[k] - ncov];
+                    }
                 }
             }
         }
@@ -273,7 +275,6 @@ SEXP PlinkMultvC(SEXP x2, SEXP xim2, SEXP cov2, SEXP n2, SEXP p2, SEXP ncov2, SE
     const double *a = REAL(a2);
     const double *xim = REAL(xim2);
 
-    Rprintf("n, p, nov, nlam are %d, %d, %d, %d\n", n, p, ncov, nlam);
     uintptr_t *x = (uintptr_t *)R_ExternalPtrAddr(x2);
     PlinkMatrix PM(n, p, x, xim, 0, ncov, cov);
     for(int j = 0; j < nlam; ++j){
