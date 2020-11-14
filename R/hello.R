@@ -205,7 +205,7 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     # warm start support
     iy = integer(np[2])
     mm = integer(np[2])
-    nino = 0L
+    nino = integer(1)
     warm=0L # warm start flag
     if(!is.null(beta0)){
         if(length(beta0) != np[2]) {
