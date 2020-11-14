@@ -18,9 +18,9 @@ wrapper <- function(x, y, lambda) {
 mytest = function(xptr, xim, no, ni, v, eta) {
     .Call('testplink',xptr, no, ni, xim, v, eta)
 }
-#tools::package_native_routine_registration_skeleton('/Users/ruilinli/myglmnet', con='/Users/ruilinli/myglmnet/src/init.c')
-#devtools::document('/Users/ruilinli/myglmnet')
-#install.packages('/Users/ruilinli/myglmnet', repo=NULL,type='source')
+#tools::package_native_routine_registration_skeleton('/home/ruilinli/myglmnet', con='/home/ruilinli/myglmnet/src/init.c')
+#devtools::document('/home/ruilinli/myglmnet')
+#install.packages('/home/ruilinli/myglmnet', repo=NULL,type='source')
 
 #' @export
 myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, offset = NULL, 
@@ -259,8 +259,8 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
         }
     }
     
-    residuals <- residuals[seq(lmu*no)]
-    residuals <- matrix(residuals, nrow = no, ncol = lmu)
+    residuals <- residuals[seq(lmu*nobs)]
+    residuals <- matrix(residuals, nrow = nobs, ncol = lmu)
     outlist$residuals <- residuals
     outlist$call <- this.call
     outlist$nobs <- nobs
@@ -272,4 +272,20 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     # match.arg(type.multinomial) if (type.multinomial == 'grouped') kopt <- 2 } kopt
     # <- as.integer(kopt)
     
+}
+
+#' @export
+PlinkPredict = function(myfit, x){
+    dense_beta = matrix(myfit$beta, nrow=p)
+    nlam = ncol(dense_beta)
+    p = nrow(dense_beta)
+    n = nrow(x)
+    if(ncol(x) != p) {
+        stop("incorrect x dimension")
+    }
+    result = double(n*nlam)
+    intercepts = as.numeric(myfit$a0)
+    .Call("PlinkMultvC", x@ptr, x@xim, x@covs, n, p , x@ncov, dense_beta, intercepts, result)
+    result = matrix(result, nrow=n)
+    return(result)
 }

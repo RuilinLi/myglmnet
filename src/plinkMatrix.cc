@@ -247,9 +247,7 @@ void PlinkMatrix::update_res(int j, double d, const double *weights,
     return;
 }
 
-void PlinkMatrix::compute_eta(double *eta, const double *weights, double aint,
-                              bool has_offset, const double *offset)
-{
+void PlinkMatrix::multv(double *eta, const double *weights, double aint) {
     for (int i = 0; i < no; ++i)
     {
         eta[i] = aint;
@@ -308,6 +306,16 @@ void PlinkMatrix::compute_eta(double *eta, const double *weights, double aint,
             }
         }
     }
+
+    if(ncov > 0) {
+        eigen_get_eta(eta, cov, weights, no, ncov);
+    }
+}
+
+void PlinkMatrix::compute_eta(double *eta, const double *weights, double aint,
+                              bool has_offset, const double *offset)
+{
+    multv(eta, weights, aint);
     if (has_offset)
     {
         for (int i = 0; i < no; ++i)
@@ -324,17 +332,4 @@ void PlinkMatrix::compute_eta(double *eta, const double *weights, double aint,
             eta[i] -= inner;
         }
     }
-
-    // This could be very inefficient, let's assume
-    // for now that ncov is small
-    // Also this is not a performance critical region
-    if(ncov > 0) {
-        // for(int i = 0; i < no; ++i){
-        //     for(int j = 0; j < ncov; ++j) {
-        //         eta[i] += cov[j*no + i] * weights[j];
-        //     }
-        // }
-        eigen_get_eta(eta, cov, weights, no, ncov);
-    }
-
 }

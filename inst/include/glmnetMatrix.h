@@ -70,6 +70,8 @@ class PlinkMatrix : public MatrixGlmnet {
 
     void compute_eta(double* eta, const double* a, double aint, bool has_offset,
                      const double* offset);
+
+    void multv(double *eta, const double *weights, double aint);
     
    private:
      const uintptr_t* data;
