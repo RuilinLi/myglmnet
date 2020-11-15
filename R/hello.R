@@ -275,9 +275,9 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
 
 #' @export
 PlinkPredict = function(myfit, x){
+    p = nrow(myfit$beta)
     dense_beta = matrix(myfit$beta, nrow=p)
     nlam = ncol(dense_beta)
-    p = nrow(dense_beta)
     n = nrow(x)
     if(ncol(x) != p) {
         stop("incorrect x dimension")
