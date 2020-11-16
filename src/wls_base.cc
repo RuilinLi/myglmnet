@@ -64,10 +64,10 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
                 if (mm[j] == 0) {
                     (*nino)++;
                     mm[j] = (*nino);
-                    ia[(*nino) - 1] = j;
-                    if ((*nino) >= nx) {
+                    if ((*nino) > nx) {
                         break;
                     }
+                    ia[(*nino) - 1] = j;
                 }
                 double d = a[j] - aj;
                 (*rsqc) += d * (2.0 * gj - d * xv[j]);

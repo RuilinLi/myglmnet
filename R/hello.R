@@ -23,7 +23,7 @@ mytest = function(xptr, xim, no, ni, v, eta) {
 #install.packages('/home/ruilinli/myglmnet', repo=NULL,type='source')
 
 #' @export
-myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, offset = NULL, 
+myglmnet <- function(x, y, family = c("gaussian", "logistic", "binomial"), weights = NULL, offset = NULL, 
     alpha = 1, nlambda = 100, lambda.min.ratio = ifelse(nobs < nvars, 0.01, 1e-04), 
     lambda = NULL, standardize = TRUE, intercept = TRUE, thresh = 1e-07, dfmax = nvars + 
         1, pmax = min(dfmax * 2 + 20, nvars), exclude = NULL, penalty.factor = rep(1, 
@@ -38,6 +38,9 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
     nobs <- as.integer(np[1])
     nvars <- as.integer(np[2])
     family <- match.arg(family)
+    if(family == "binomial"){
+        family <- "logistic"
+    }
     if (alpha > 1) {
         warning("alpha >1; set to 1")
         alpha <- 1
@@ -174,8 +177,12 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
         mxitnr <- 1
         sdy <- sd(y)
         y <- y/sdy
+        cl <- cl/sdy
         ulam <- ulam * (1 - alpha + alpha/sdy)
         alpha_mod <- alpha / (sdy * (1- alpha)+ alpha) #modified alpha, keep original
+        if(!is.null(beta0)){
+            beta0 <- beta0/sdy
+        }
     }
     mxitnr <- as.integer(mxitnr)
 
@@ -191,6 +198,9 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
             if(standardize) {
                 covsd <- apply(covmat, 2, sd)
                 covmat <- sweep(covmat, 2, covsd, "/")
+                if(!is.null(beta0)){
+                    beta0[1:x@ncov] <- beta0[1:x@ncov] * covsd
+                }
             }
             x_list = list("Plink", np[1], np[2], x@ptr, x@xim, x@ncov, covmat)
         } else {
@@ -214,13 +224,15 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic"), weights = NULL, o
             stop("warm start must be given regularization parameters")
         }
         nnz_ind = which(beta0 != 0)
-        nino = length(nnz_ind)
+        nino[1] = length(nnz_ind)
         if(nino > nx) {
             stop("Already have too many variables in the model")
         }
-        iy[nnz_ind] = 1L
-        mm[nnz_ind] = 1:nino
-        ia[1:nino] = nnz_ind - 1L # 0 based index
+        if(nino > 0){
+            iy[nnz_ind] = 1L
+            mm[nnz_ind] = 1:nino
+            ia[1:nino] = nnz_ind - 1L # 0 based index
+        }
         beta0 = as.double(beta0)
         warm = 1L
     } else {

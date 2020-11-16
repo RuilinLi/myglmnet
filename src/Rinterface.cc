@@ -203,7 +203,9 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
     int nino = asInteger(nino2);
     int warm = asInteger(warm2);
 
-    if(warm && isd) {
+    // Forgetting to exclude plink matrix here gave me headache
+    if(warm && isd && (strcmp(mattype, "Plink") != 0)) {
+        Rprintf("standardizing variables here!\n");
         for(int j = 0; j < ni; ++j) {
             beta0[j] *= xs[j];
         }

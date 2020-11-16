@@ -110,7 +110,7 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
         devratio_vec[m] = devratio;
         alm[m] = almc;
         (*lmu)++;
-        if ((devratio > 0.999) || (nino >= nx)) {
+        if ((devratio > 0.999) || (nino > nx)) {
             break;
         }
 
