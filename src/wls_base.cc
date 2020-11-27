@@ -86,8 +86,8 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
 
                 for (int i = 0; i < no; ++i) {
                     r[i] -= d * v[i];
-                    rsum -= d * v[i];
                 }
+                rsum = 0.0;
             }
 
             // KKT checking here
@@ -153,8 +153,8 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
                 dlx = fmax(dlx, xmz * d * d);
                 for (int i = 0; i < no; ++i) {
                     r[i] -= d * v[i];
-                    rsum -= d * v[i];
                 }
+                rsum = 0.0;
 
             }
 
