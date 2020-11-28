@@ -15,12 +15,17 @@ wrapper <- function(x, y, lambda) {
     NULL
 }
 #' @export
-mytest = function(xptr, xim, no, ni, v, eta) {
-    .Call('testplink',xptr, no, ni, xim, v, eta)
+mytest = function(eta, y, v) {
+    o = order(y)
+    y = y[o]
+    o = o -1L
+    r = rank(y,ties.method="min") - 1L
+    rm = rank(y,ties.method="max") - 1L
+    .Call('testwz',eta, o, rm, r, v)
 }
-#tools::package_native_routine_registration_skeleton('/home/ruilinli/myglmnet', con='/home/ruilinli/myglmnet/src/init.c')
-#devtools::document('/home/ruilinli/myglmnet')
-#install.packages('/home/ruilinli/myglmnet', repo=NULL,type='source')
+#tools::package_native_routine_registration_skeleton('/home/ruilinli/snpnettest/myglmnet', con='/home/ruilinli/snpnettest/myglmnet/src/init.c')
+#devtools::document('/home/ruilinli/snpnettest/myglmnet')
+#install.packages('/home/ruilinli/snpnettest/myglmnet', repo=NULL,type='source')
 
 #' @export
 myglmnet <- function(x, y, family = c("gaussian", "logistic", "binomial"), weights = NULL, offset = NULL, 

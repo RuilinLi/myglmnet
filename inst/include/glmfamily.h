@@ -62,4 +62,28 @@ class Logistic : public GlmFamily {
                          double *aint, int len);
 };
 
+class Cox : public GlmFamily {
+   public:
+    Cox(const int *order, const int * rankmin, const int * rankmax, int len);
+    ~Cox();
+    void get_workingset(const double *eta, const double *y, const double *v,
+                        double *w, double *z, int len, double* sumbuf);
+
+    double get_deviance(const double *y, const double *eta, const double *v,
+                        int len);
+
+    void get_residual(const double *y, const double *eta, const double *v,
+                      double *r, int len);
+
+    double null_deviance(const double *y, const double *v, double *r, int intr,
+                         double *eta, bool has_offset, const double *offset,
+                         double *aint, int len);
+    private:
+      const int * order;
+      const int * rankmin;
+      const int * rankmax;
+      double *rskden;
+
+};
+
 #endif

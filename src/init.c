@@ -10,12 +10,12 @@
 /* .Call calls */
 extern SEXP PlinkMultvC(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
 extern SEXP solve(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
-extern SEXP testplink(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP);
+extern SEXP testwz(SEXP, SEXP, SEXP, SEXP, SEXP);
 
 static const R_CallMethodDef CallEntries[] = {
     {"PlinkMultvC", (DL_FUNC) &PlinkMultvC,  9},
     {"solve",       (DL_FUNC) &solve,       35},
-    {"testplink",   (DL_FUNC) &testplink,    6},
+    {"testwz",      (DL_FUNC) &testwz,       5},
     {NULL, NULL, 0}
 };
 

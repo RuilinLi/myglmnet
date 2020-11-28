@@ -120,6 +120,44 @@ SEXP testplink(SEXP x2, SEXP no2, SEXP ni2, SEXP xim2, SEXP v2, SEXP eta2) {
     return R_NilValue;
 }
 
+SEXP testwz(SEXP eta2, SEXP order2, SEXP rankmax2, SEXP rankmin2, SEXP v2){
+    const double *v = REAL(v2);
+    int len = length(eta2);
+    Cox cox(INTEGER(order2), INTEGER(rankmin2), INTEGER(rankmax2),len);
+    double *z = (double*)malloc(sizeof(double)*len);
+    double *w = (double*)malloc(sizeof(double)*len);
+    double sumbuf[2];
+    cox.get_workingset(REAL(eta2), nullptr, v, w, z, len, sumbuf);
+
+    for(int i = 0; i < len; ++i){
+        Rprintf("z[%d] is %f and w[%d] is %f \n", i, z[i], i, w[i]);
+    }
+    Rprintf("zsum is %f and wsum is %f\n", sumbuf[0], sumbuf[1]);
+    double dev = cox.get_deviance(nullptr, REAL(eta2), v, len);
+    Rprintf("deviance is %f\n", dev);
+
+    double *r = (double*)malloc(sizeof(double)*len);
+    double *eta3 = (double*)malloc(sizeof(double)*len);
+
+    double nulldev = cox.null_deviance(nullptr, v, r,0,eta3,false,nullptr, nullptr, len);
+    Rprintf("nulldeviance is %f \n", nulldev);
+    for(int i = 0; i < len; ++i){
+        Rprintf("residual[%d] is %f\n", i, r[i]);
+    }
+
+    cox.get_residual(nullptr, eta3, v, r, len);
+    for(int i = 0; i < len; ++i){
+        Rprintf("get residual residual[%d] is %f\n", i, r[i]);
+    }
+
+
+    free(r);
+    free(eta3);
+    free(z);
+    free(w);
+    return R_NilValue;
+}
+
 SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
            SEXP cl2, SEXP nx2, SEXP nlam2, SEXP flmin2, SEXP ulam2,
            SEXP thresh2, SEXP isd2, SEXP intr2, SEXP maxit2, SEXP lmu2,

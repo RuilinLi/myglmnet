@@ -187,3 +187,61 @@ microbenchmark(
 # # ref = glmnet()
 #
 # # wrapper()
+
+## Cox test
+
+
+rev_cumsum = function(v){
+  rev(cumsum(rev(v)))
+}
+
+compute_lw = function(f, time, c){
+  f = scale(f,TRUE,FALSE)
+  theta = exp(f)[,1]
+  n = length(theta)
+  r = rank(time, ties.method="min")
+  rm = rank(time, ties.method="max")
+  rskden=rev_cumsum(theta)[r]
+  lsecond = cumsum(c/rskden)[rm]
+  lsecond = lsecond*theta
+  wsecond = cumsum(c/rskden^2)[rm]
+  wsecond = (exp(2*f)[,1])*wsecond
+  l = (lsecond - c)/n
+  w = (lsecond - wsecond)/n
+  dev = mean((log(rskden) - f) * c)
+  return(list(l = l, w=w, dev = dev*2))
+}
+
+
+n = 50
+p = 5
+X = matrix(rnorm(n*p),n,p)
+beta = rnorm(p)
+y = rexp(n) * exp(- X%*%beta)
+y = round(y) + 1.5
+o = order(y)
+v = runif(n)
+v = v/sum(v)
+eta = X %*% beta
+lw = compute_lw(eta[o], y[o], v[o]*n)
+time = y[o]
+r = rank(time, ties.method="min")
+rm = rank(time, ties.method="max")
+rskden=rev_cumsum(exp(eta[o]))[r]
+
+library(myglmnet)
+mytest(eta, y, v)
+
+
+cox_residual = function(f, time, c){
+  f=scale(f,TRUE,FALSE)
+  o = order(time)
+  ordered_time = time[o]
+  r = rank(ordered_time, ties.method="min")
+  rm = rank(ordered_time, ties.method="max")
+  ef=exp(f)[o]
+  rskden=rev(cumsum(rev(ef)))[r]
+  grad =  cumsum(c[o]/rskden)[rm]
+  grad[o] = c[o] -  ef * grad
+  grad
+}
