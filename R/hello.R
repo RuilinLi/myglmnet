@@ -28,7 +28,7 @@ mytest = function(eta, y, v) {
 #install.packages('/home/ruilinli/snpnettest/myglmnet', repo=NULL,type='source')
 
 #' @export
-myglmnet <- function(x, y, family = c("gaussian", "logistic", "binomial"), weights = NULL, offset = NULL, 
+myglmnet <- function(x, y, family = c("gaussian", "logistic", "binomial", "cox"), weights = NULL, offset = NULL, 
     alpha = 1, nlambda = 100, lambda.min.ratio = ifelse(nobs < nvars, 0.01, 1e-04), 
     lambda = NULL, standardize = TRUE, intercept = TRUE, thresh = 1e-07, dfmax = nvars + 
         1, pmax = min(dfmax * 2 + 20, nvars), exclude = NULL, penalty.factor = rep(1, 
@@ -122,10 +122,29 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic", "binomial"), weigh
     ### end check on limits
     
     isd <- as.integer(standardize)
+
+    if(family == "cox") {
+        if(!missing(intercept)){
+            warning("Cox model has no intercept")
+        }
+        intercept = FALSE
+        if(!survival::is.Surv(y)){
+            stop("y has to be a Surv object for Cox model")
+        }
+        # y[,1] are the time and y[,2] are the status
+        ytime = y[,1]
+        yorder = order(ytime)
+        ytime = ytime[yorder]
+        rankmin = rank(ytime, ties.method="min") - 1L
+        rankmax = rank(ytime, ties.method="max") - 1L
+        yorder = yorder - 1L
+
+        weights = weights * y[, 2]
+        y = list(yorder, rankmin, rankmax)
+    }
+
     intr <- as.integer(intercept)
-    if (!missing(intercept) && family == "cox") 
-        warning("Cox model has no intercept")
-    
+
     # Don't have this yet jsd <- as.integer(standardize.response)
     thresh <- as.double(thresh)
     if (is.null(lambda)) {

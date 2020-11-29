@@ -110,11 +110,13 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
         devratio_vec[m] = devratio;
         alm[m] = almc;
         (*lmu)++;
-        if ((devratio > 0.999) || (nino > nx)) {
+
+        // Only do early stop if user does not provide lambda 
+        if ((flmin < 1.0) && ((devratio > 0.999) || (nino > nx))) {
             break;
         }
 
-        if((m > 0) &&  ((devratio - devratio_vec[m-1]) < devratio*1e-5)){
+        if((m > 0) && (flmin < 1.0) && ((devratio - devratio_vec[m-1]) < devratio*1e-5)){
             break;
         }
 

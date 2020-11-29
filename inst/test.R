@@ -212,13 +212,27 @@ compute_lw = function(f, time, c){
   return(list(l = l, w=w, dev = dev*2))
 }
 
+library(myglmnet)
+library(survival)
+library(glmnet)
 
-n = 50
+n = 5000
 p = 5
 X = matrix(rnorm(n*p),n,p)
 beta = rnorm(p)
 y = rexp(n) * exp(- X%*%beta)
 y = round(y) + 1.5
+status = rbinom(n,1,0.5)
+s = Surv(y, status)
+colnames(s) = c('time', 'status')
+res = myglmnet(X, s, family="cox", standardize=F, nlambda=3)
+res2 = glmnet(X, s, family="cox", standardize=F, nlambda=3)
+
+
+
+
+
+res2 = coxph(Surv(y, status)~ X)
 o = order(y)
 v = runif(n)
 v = v/sum(v)
@@ -245,3 +259,7 @@ cox_residual = function(f, time, c){
   grad[o] = c[o] -  ef * grad
   grad
 }
+
+
+resid = cox_residual(rep(0, n), y, rep(1/n,n))
+resid %*% X

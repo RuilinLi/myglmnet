@@ -13,12 +13,15 @@ void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,
                 int *nin, double *devratio_vec, double *alm, int *nlp,
                 double *nulldev, int *jerr, double *a, int *iy, int *mm, int nino, int warm, double *residuals);
 
-GlmFamily *get_family(const char *family) {
+GlmFamily *get_family(const char *family, const int *order=nullptr, const int *rankmin=nullptr, const int *rankmax=nullptr, int len=0) {
     if (strcmp(family, "gaussian") == 0) {
         return new Gaussian();
     }
     if (strcmp(family, "logistic") == 0) {
         return new Logistic();
+    }
+    if(strcmp(family, "cox") == 0) {
+        return new Cox(order, rankmin, rankmax, len);
     }
     error("invalid family name\n");
 }
@@ -145,7 +148,7 @@ SEXP testwz(SEXP eta2, SEXP order2, SEXP rankmax2, SEXP rankmin2, SEXP v2){
         Rprintf("residual[%d] is %f\n", i, r[i]);
     }
 
-    cox.get_residual(nullptr, eta3, v, r, len);
+    cox.get_residual(nullptr, REAL(eta2), v, r, len);
     for(int i = 0; i < len; ++i){
         Rprintf("get residual residual[%d] is %f\n", i, r[i]);
     }
@@ -202,13 +205,20 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
         get_matrix(xptr, mattype, no, ni, isd, intr, ju, xm, xs, v, xim, ncov, cov);
 
     // Create family object
-    GlmFamily *fam = get_family(CHAR(STRING_ELT(family2, 0)));
+    const char *family = CHAR(STRING_ELT(family2, 0));
+    double *y = nullptr;
+    GlmFamily *fam = nullptr;
+    if(strcmp(family, "cox") == 0){
+        fam = get_family(family, INTEGER(VECTOR_ELT(y2, 0)), INTEGER(VECTOR_ELT(y2, 1)),INTEGER(VECTOR_ELT(y2, 2)), no);
+    } else {
+        fam = get_family(family);
+        y = REAL(y2);
+    }
     double flmin = asReal(flmin2);
     int nlambda = asInteger(nlam2);
     double *lambdas = REAL(ulam2);
 
     double alpha = asReal(alpha2);
-    double *y = REAL(y2);
 
     double *vp = REAL(vp2);
     double *cl = REAL(cl2);

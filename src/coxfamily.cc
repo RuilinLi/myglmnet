@@ -1,6 +1,5 @@
 #include "glmfamily.h"
 #include <math.h>
-#include <iostream>
 // This will probably be fixed in a new version of Eigen, for now
 #ifndef __clang__
 #if __GNUC__ < 8
@@ -21,7 +20,6 @@ Cox::Cox(const int *order, const int *rankmin, const int *rankmax, int len) : or
 Cox::~Cox(){
     free(rskden);
     rskden=nullptr;
-    std::cout << "free successful\n";
 }
 
 void Cox::get_workingset(const double *eta, const double *y, const double *v,
@@ -83,8 +81,8 @@ void Cox::get_workingset(const double *eta, const double *y, const double *v,
         double local_eta = eta[order[i]];
         double eeta = exp(local_eta);
         wmap[i] = eeta * (zmap[i]-wmap[i] * eeta);
-        double grad = eeta * zmap[i] - orderedv[i];
-        zmap[i] = local_eta - grad/wmap[i];
+        // double grad = eeta * zmap[i] - orderedv[i];
+        zmap[i] = orderedv[i] - eeta * zmap[i];
         wsum += wmap[i];
         zsum += zmap[i];
     }
