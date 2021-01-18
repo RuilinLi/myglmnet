@@ -263,3 +263,102 @@ cox_residual = function(f, time, c){
 
 resid = cox_residual(rep(0, n), y, rep(1/n,n))
 resid %*% X
+
+
+
+cdeviance <-
+    function (pred = NULL, y, x = 0, offset = NULL, weights = NULL,
+              beta = NULL)
+{
+    storage.mode(x) = "double"
+    ty = y[,1]
+    tevent = y[,2]
+    ty = ty + (1 - tevent) * 100 * .Machine$double.eps
+    nobs = as.integer(length(ty))
+    nvars = as.integer(ncol(x))
+    nvec=1
+    if (is.null(weights))
+        weights = rep(1, nobs)
+    else {
+        weights=nobs*weights/sum(weights)
+        weights = as.double(weights)
+    }
+### Compute saturated loglikelihood
+    wd=weights[tevent==1]
+    tyd=ty[tevent==1]
+    if(any(duplicated(tyd))){
+        wd=tapply(wd,tyd,sum)
+    }
+    wd=wd[wd>0]
+    lsat=-sum(wd*log(wd))
+####
+    if (is.null(offset))
+        offset = rep(0, nobs)
+    else offset=as.double(offset)
+    if (is.null(beta)) {
+        beta = double(0)
+        nvars = as.integer(0)
+    }
+    else {
+        beta = as.matrix(beta)
+        nvec = ncol(beta)
+    }
+    if(!is.null(pred)){
+        # trick to get a set of deviances based on predictions"
+        x=as.matrix(pred)
+        nvec=ncol(x)
+        storage.mode(x)="double"
+        beta=diag(nvec)
+        nvars=as.integer(nvec)
+        storage.mode(beta)="double"
+    }
+    nvec=as.integer(nvec)
+
+
+    lsat
+
+}
+
+
+# Code to compute saturated log partial likelihood
+lsat = function(y, w=NULL)
+{
+  yt = y[,1]
+  yevent = y[,2]
+  n = length(yevent)
+  has_event = yevent > 0
+  yt = yt[has_event]
+  nevent = length(yt)
+  if(is.null(w)){
+    w = rep(1,n)
+  } else {
+    w = w[has_event]
+  }
+
+  o = order(yt)
+  yt = yt[o]
+  w = w[o]
+
+  r =  rank(yt, ties.method='min')
+  rm = rank(yt, ties.method='max')
+  result = 0
+  i = 1
+  while(i < nevent + 1){
+    diff = rm[i] - r[i]
+    if(diff > 0){
+      wsum = 0
+      for(j in 1:(diff+1)){
+        wj = w[i+j-1]
+        if(wj != 0){
+          result = result + wj * log(wj)
+          wsum = wsum + wj
+        }
+      }
+      if(wsum != 0){
+        result = result - wsum * log(wsum)
+      }
+    }
+    i = i + diff + 1
+  }
+  result
+}
