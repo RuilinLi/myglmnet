@@ -140,7 +140,7 @@ double PlinkMatrix::dot_product(int j, const double *v, double vsum)
     // assert((j > 0) && (j < ni));
     if(j >= ncov){
         double buf[3];
-        GetWeightsByValueNoDosage(v, &(data[(j-ncov) * word_ct]), no, buf);
+        GetWeightsByValueNoDosage(v, &(data[((uintptr_t)(j-ncov)) * word_ct]), no, buf);
         double result = buf[0] + 2 * buf[1] + buf[2] * xim[j - ncov];
         if(center) {
             result -= xim[j - ncov] * vsum;
@@ -158,7 +158,7 @@ double PlinkMatrix::dot_product(int j, const double *v, double vsum)
 double PlinkMatrix::vx2(int j, const double* v, double vsum, double *xm) {
     if(j >= ncov){
         double buf[3];
-        GetWeightsByValueNoDosage(v, &(data[(j-ncov) * word_ct]), no, buf);
+        GetWeightsByValueNoDosage(v, &(data[((uintptr_t)(j-ncov)) * word_ct]), no, buf);
         double result = buf[0] + 4 * buf[1] + buf[2] * xim[j - ncov] * xim[j - ncov];
         if(center) {
             double l1 = (buf[0] + 2 * buf[1] + buf[2] * xim[j - ncov]) * 2 * xim[j - ncov];
@@ -182,7 +182,7 @@ void PlinkMatrix::update_res(int j, double d, const double *weights,
                              double *r, double *rsum, double vsum, double vx)
 {
     if(j >= ncov){
-        const uintptr_t *genoarr = &(data[(j-ncov) * word_ct]);
+        const uintptr_t *genoarr = &(data[((uintptr_t)(j-ncov)) * word_ct]);
 
         const uint32_t word_ct_local = DivUp(no, kBitsPerWordD2);
 #pragma omp parallel
@@ -269,7 +269,7 @@ void PlinkMatrix::multv(double *eta, const double *weights, double aint) {
         }
         for (int j = ncov; j < ni; ++j)
         {
-            const uintptr_t *genoarr = &(data[(j-ncov) * word_ct]);
+            const uintptr_t *genoarr = &(data[((uintptr_t)(j-ncov)) * word_ct]);
             // it's easy to forget that xim should be extended when
             // we add covariates to it
             double ximpute = xim[j - ncov];
