@@ -52,39 +52,39 @@ void get_xmxs_dense(const double *x, const double *v, int *ju, double *xm,
 
 void standardize(double *x, const int *ju, double *xm, double *xs, int intr,
                  int isd, int no, int ni) {
-    if (intr) {
-        for (int j = 0; j < ni; ++j) {
-            if (!ju[j]) {
-                continue;
-            }
-            for (int i = 0; i < no; ++i) {
-                x[j * no + i] -= xm[j];
-            }
-        }
-
-        if (isd) {
-            for (int j = 0; j < ni; ++j) {
-                if (!ju[j]) {
-                    continue;
-                }
-                for (int i = 0; i < no; ++i) {
-                    x[j * no + i] /= xs[j];
-                }
-            }
-        }
-        return;
+  if (intr) {
+    for (int j = 0; j < ni; ++j) {
+      if (!ju[j]) {
+        continue;
+      }
+      for (int i = 0; i < no; ++i) {
+        x[j * no + i] -= xm[j];
+      }
     }
 
     if (isd) {
-        for (int j = 0; j < ni; ++j) {
-            if (!ju[j]) {
-                continue;
-            }
-            for (int i = 0; i < no; ++i) {
-                x[j * no + i] /= xs[j];
-            }
+      for (int j = 0; j < ni; ++j) {
+        if (!ju[j]) {
+          continue;
         }
+        for (int i = 0; i < no; ++i) {
+          x[j * no + i] /= xs[j];
+        }
+      }
     }
+    return;
+  }
+
+  if (isd) {
+    for (int j = 0; j < ni; ++j) {
+      if (!ju[j]) {
+        continue;
+      }
+      for (int i = 0; i < no; ++i) {
+        x[j * no + i] /= xs[j];
+      }
+    }
+  }
 }
 
 MatrixGlmnet *get_matrix(SEXP xptr, const char *mattype, int no, int ni,
@@ -169,7 +169,6 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
            SEXP mxitnr2, SEXP nulldev2, SEXP jerr2, SEXP beta02, SEXP iy2,
            SEXP mm2, SEXP nino2, SEXP warm2, SEXP residuals2) {
     // Create matrix object
-    // ProfilerStart("/home/ruilinli/myglmnet/inst/prof.out");
     const char *mattype = CHAR(STRING_ELT(VECTOR_ELT(x2, 0), 0));
     int no = asInteger(VECTOR_ELT(x2, 1));
     int ni = asInteger(VECTOR_ELT(x2, 2));
@@ -265,37 +264,29 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
 
     // scale parameters back if standardization happend
     if (isd && (strcmp(mattype, "Plink") != 0)) {
-        for (int m = 0; m < (*lmu); ++m) {
-            for (int k = 0; k < nin[m]; ++k) {
-                ca[m * nx + k] /= xs[ia[k]];
-            }
+      for (int m = 0; m < (*lmu); ++m) {
+        for (int k = 0; k < nin[m]; ++k) {
+          ca[m * nx + k] /= xs[ia[k]];
         }
+      }
     }
 
-    if (intr)
-    {
-        if (strcmp(mattype, "Plink") == 0)
-        {
-            for (int m = 0; m < (*lmu); ++m)
-            {
-                for (int k = 0; k < nin[m]; ++k)
-                {
-                    if(ia[k] >= ncov){
-                        a0[m] -= ca[m * nx + k] * xim[ia[k] - ncov];
-                    }
-                }
+    if (intr) {
+      if (strcmp(mattype, "Plink") == 0) {
+        for (int m = 0; m < (*lmu); ++m) {
+          for (int k = 0; k < nin[m]; ++k) {
+            if (ia[k] >= ncov) {
+              a0[m] -= ca[m * nx + k] * xim[ia[k] - ncov];
             }
+          }
         }
-        else
-        {
-            for (int m = 0; m < (*lmu); ++m)
-            {
-                for (int k = 0; k < nin[m]; ++k)
-                {
-                    a0[m] -= ca[m * nx + k] * xm[ia[k]];
-                }
-            }
+      } else {
+        for (int m = 0; m < (*lmu); ++m) {
+          for (int k = 0; k < nin[m]; ++k) {
+            a0[m] -= ca[m * nx + k] * xm[ia[k]];
+          }
         }
+      }
     }
 
     delete fam;
@@ -306,7 +297,6 @@ SEXP solve(SEXP alpha2, SEXP x2, SEXP y2, SEXP weights2, SEXP ju2, SEXP vp2,
         UNPROTECT(1);
     }
     delete X;
-    //ProfilerStop();
     return R_NilValue;
 }
 

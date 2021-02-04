@@ -1,33 +1,6 @@
 
 #' @useDynLib myglmnet, .registration = TRUE
 #' @export
-wrapper <- function(x, y, lambda) {
-    no <- nrow(x)
-    ni <- ncol(x)
-    nlam <- length(lambda)
-    weight <- rep(1/no, no)
-    vp <- rep(1, ni)
-    lower.limits <- rep(-100, ni)
-    upper.limits <- rep(100, ni)
-    cl <- rbind(lower.limits, upper.limits)
-    ju <- rep(1L, ni)
-    # .Call('test', x, y, lambda, weight, 0L, ju, vp, cl, PACKAGE = 'myglmnet')
-    NULL
-}
-#' @export
-mytest = function(eta, y, v) {
-    o = order(y)
-    y = y[o]
-    o = o -1L
-    r = rank(y,ties.method="min") - 1L
-    rm = rank(y,ties.method="max") - 1L
-    .Call('testwz',eta, o, rm, r, v)
-}
-#tools::package_native_routine_registration_skeleton('/home/ruilinli/snpnettest/myglmnet', con='/home/ruilinli/snpnettest/myglmnet/src/init.c')
-#devtools::document('/home/ruilinli/snpnettest/myglmnet')
-#install.packages('/home/ruilinli/snpnettest/myglmnet', repo=NULL,type='source')
-
-#' @export
 myglmnet <- function(x, y, family = c("gaussian", "logistic", "binomial", "cox"), weights = NULL, offset = NULL, 
     alpha = 1, nlambda = 100, lambda.min.ratio = ifelse(nobs < nvars, 0.01, 1e-04), 
     lambda = NULL, standardize = TRUE, intercept = TRUE, thresh = 1e-07, dfmax = nvars + 
@@ -301,12 +274,6 @@ myglmnet <- function(x, y, family = c("gaussian", "logistic", "binomial", "cox")
     outlist$nobs <- nobs
     class(outlist) <- c(class(outlist), "glmnet")
     outlist
-    
-    # No need for this either kopt <- switch(match.arg(type.logistic), Newton = 0,
-    # modified.Newton = 1) if (family == 'multinomial') { type.multinomial <-
-    # match.arg(type.multinomial) if (type.multinomial == 'grouped') kopt <- 2 } kopt
-    # <- as.integer(kopt)
-    
 }
 
 #' @export

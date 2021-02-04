@@ -150,14 +150,4 @@ double Logistic::null_deviance(const double *y, const double *v, double *r,
     }
 
     throw "Offset has not been implemented for logstic regression\n";
-
-    // double count0 = 0;
-    // double count1 = 0;
-    // for(int i = 0; i < len; ++i) {
-    //     count0 += w[i] * y[i] * log(1 + exp(-offset[i]));
-    //     count1 += w[i] * (1-y[i]) * log(1 + exp(offset[i]));
-    // }
-    // if(!intr){
-    //     return (2*(count0 + count1));
-    // }
 }
