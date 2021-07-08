@@ -1,5 +1,7 @@
 #include "glmfamily.h"
 #include <math.h>
+# include<stdlib.h>
+
 // This will probably be fixed in a new version of Eigen, for now
 #ifndef __clang__
 #if __GNUC__ < 8

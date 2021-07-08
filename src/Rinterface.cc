@@ -3,6 +3,7 @@
 #include "Rinternals.h"
 #include "glmfamily.h"
 #include "glmnetMatrix.h"
+# include<stdlib.h>
 // #include "gperftools/profiler.h"
 
 void glmnetPath(double alpha, MatrixGlmnet *X, const double *y, const double *v,

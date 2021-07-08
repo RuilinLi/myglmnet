@@ -7,7 +7,7 @@ void wls_base(double alm0, double almc, double alpha, int m, int no, int ni,
               double *__restrict g, int *__restrict ia, int *__restrict iy,
               int *iz, int *__restrict mm, int *nino, double *rsqc, int *nlp,
               double *__restrict xv, double * xm,int *jerr, int irls_iter, double rsum, double vsum) {
-    // double *__restrict xv = (double *)malloc(sizeof(double) * ni);
+
     const double xmz = vsum;
     if(!intr) {
         vsum = 0;
